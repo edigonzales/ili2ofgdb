@@ -1,0 +1,18 @@
+# Deterministic source pinning for gdal-minimal.
+# This file is sourced by zsh scripts.
+
+GDAL_VERSION="v3.12.0"
+GDAL_ARCHIVE="gdal-v3.12.0.tar.gz"
+GDAL_URL="https://github.com/OSGeo/gdal/archive/refs/tags/${GDAL_VERSION}.tar.gz"
+GDAL_SRC_DIR="gdal-3.12.0"
+
+PROJ_VERSION="9.6.0"
+PROJ_ARCHIVE="proj-9.6.0.tar.gz"
+PROJ_URL="https://github.com/OSGeo/PROJ/archive/refs/tags/${PROJ_VERSION}.tar.gz"
+PROJ_SRC_DIR="proj-9.6.0"
+
+SQLITE_VERSION="3490100"
+SQLITE_YEAR="2025"
+SQLITE_ARCHIVE="sqlite-autoconf-${SQLITE_VERSION}.tar.gz"
+SQLITE_URL="https://www.sqlite.org/${SQLITE_YEAR}/${SQLITE_ARCHIVE}"
+SQLITE_SRC_DIR="sqlite-autoconf-${SQLITE_VERSION}"

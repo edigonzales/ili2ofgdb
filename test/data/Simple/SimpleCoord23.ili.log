@@ -1,0 +1,18 @@
+Info: ili2ofgdb-5.5.2-SNAPSHOT-55d4919f666f13bfa7968e82ed4a488233eb168c
+Info: ili2c-5.6.8-e6f7ab6dd5cdba29afc9b24866ecb98c057d82b2
+Info: iox-ili-1.24.4-8e966a086a72e7e2990a312b1229ee5878fd5994
+Info: java.version 25
+Info: user.name <stefan>
+Info: maxMemory 524288 KB
+Info: currentTime 2026-02-15 11:53:08
+Info: dburl <jdbc:ili2ofgdb:test/data/Simple/Simple.gdb>
+Info: dbusr <>
+Info: databaseProduct <ESRI FileGDB API>
+Info: databaseVersion <1.5>
+Info: driverName <openfgdb4j>
+Info: driverVersion <openfgdb4j>
+Info: max active DB statements <0>
+Info: compile models...
+Info: ilifile <test/data/Simple/SimpleCoord23.ili>
+Info: create table structure, if not existing...
+Info: ...done

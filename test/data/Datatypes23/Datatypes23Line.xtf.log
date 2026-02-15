@@ -1,0 +1,35 @@
+Info: ili2ofgdb-5.5.2-SNAPSHOT-55d4919f666f13bfa7968e82ed4a488233eb168c
+Info: ili2c-5.6.8-e6f7ab6dd5cdba29afc9b24866ecb98c057d82b2
+Info: iox-ili-1.24.4-8e966a086a72e7e2990a312b1229ee5878fd5994
+Info: java.version 25
+Info: user.name <stefan>
+Info: maxMemory 524288 KB
+Info: currentTime 2026-02-15 11:53:11
+Info: dburl <jdbc:ili2ofgdb:test/data/Datatypes23/Datatypes23.gdb>
+Info: dbusr <>
+Info: databaseProduct <ESRI FileGDB API>
+Info: databaseVersion <1.5>
+Info: driverName <openfgdb4j>
+Info: driverVersion <openfgdb4j>
+Info: max active DB statements <0>
+Info: compile models...
+Info: lookup model <Datatypes23> 2.3 in repository </Users/stefan/sources/ili2db-fgdb-codex/test/data/Datatypes23/>
+Info: ilifile </Users/stefan/sources/ili2db-fgdb-codex/test/data/Datatypes23/Datatypes23.ili>
+Info: create table structure, if not existing...
+Info: process data file...
+Info: assume unknown external objects
+Info: data <test/data/Datatypes23/Datatypes23Line.xtf>
+Info: first validation pass...
+Info: Basket Datatypes23.Topic(oid b1)...
+Info: object count 6
+Info: second validation pass...
+Warning: ili2ofgdb: skip domain assignment; column not found: classattr.aufzaehlung
+Warning: ili2ofgdb: skip domain assignment; column not found: classattr.horizalignment
+Warning: ili2ofgdb: skip domain assignment; column not found: classattr.vertalignment
+Warning: ili2ofgdb: skip domain assignment; column not found: classattr.aboolean
+Info: Datatypes23Line.xtf: Datatypes23.Topic BID=b1
+Info:       2 objects in CLASS Datatypes23.Topic.Line2
+Info:       1 objects in CLASS Datatypes23.Topic.Line3
+Info:       2 objects in CLASS Datatypes23.Topic.SimpleLine2
+Info:       1 objects in CLASS Datatypes23.Topic.SimpleLine3
+Info: ...import done

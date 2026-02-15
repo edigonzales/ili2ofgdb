@@ -1,0 +1,25 @@
+# General IDE/editor/system noise
+bin/
+.DS_Store
+.svn/
+support/
+.settings/
+.project
+.classpath
+.idea/
+*~
+
+# Gradle/build outputs
+build/
+dist/
+/.gradle/
+
+# Parser generation artifacts (legacy fgdb flavor)
+/ili2fgdb/src/ch/ehi/ili2fgdb/jdbc/parser/SqlSyntaxTokenTypes.txt
+/ili2fgdb/src/ch/ehi/ili2fgdb/jdbc/parser/SqlLexer.smap
+/ili2fgdb/src/ch/ehi/ili2fgdb/jdbc/parser/SqlSyntax.smap
+
+# gdal-minimal downloaded/extracted/build outputs
+/gdal-minimal/build/
+/gdal-minimal/third_party/downloads/
+/gdal-minimal/third_party/src/
