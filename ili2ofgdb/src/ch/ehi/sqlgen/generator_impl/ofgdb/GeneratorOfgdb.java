@@ -204,7 +204,10 @@ public class GeneratorOfgdb implements Generator {
         if (column instanceof DbColDecimal) {
             return "DOUBLE";
         }
-        if (column instanceof DbColGeometry || column instanceof DbColBlob) {
+        if (column instanceof DbColGeometry) {
+            return toGeometrySqlType((DbColGeometry) column);
+        }
+        if (column instanceof DbColBlob) {
             return "BLOB";
         }
         if (column instanceof DbColId) {
@@ -232,6 +235,41 @@ public class GeneratorOfgdb implements Generator {
             return "VARCHAR(4096)";
         }
         return "VARCHAR(1024)";
+    }
+
+    private String toGeometrySqlType(DbColGeometry column) {
+        String kind;
+        int type = column.getType();
+        if (type == DbColGeometry.POINT || type == DbColGeometry.MULTIPOINT) {
+            kind = "POINT";
+        } else if (type == DbColGeometry.LINESTRING || type == DbColGeometry.CIRCULARSTRING
+                || type == DbColGeometry.COMPOUNDCURVE || type == DbColGeometry.MULTILINESTRING
+                || type == DbColGeometry.MULTICURVE) {
+            kind = "LINE";
+        } else if (type == DbColGeometry.POLYGON || type == DbColGeometry.CURVEPOLYGON
+                || type == DbColGeometry.MULTIPOLYGON || type == DbColGeometry.MULTISURFACE
+                || type == DbColGeometry.POLYHEDRALSURFACE || type == DbColGeometry.TIN
+                || type == DbColGeometry.TRIANGLE) {
+            kind = "POLYGON";
+        } else if (type == DbColGeometry.GEOMETRYCOLLECTION) {
+            throw new IllegalArgumentException("Unsupported geometry type GEOMETRYCOLLECTION for OFGDB geometry column "
+                    + column.getName());
+        } else {
+            throw new IllegalArgumentException("Unsupported geometry type " + type + " for OFGDB geometry column "
+                    + column.getName());
+        }
+
+        int epsg = 0;
+        Integer srsId = getSrsId(column.getSrsAuth(), column.getSrsId());
+        if (srsId != null) {
+            epsg = srsId.intValue();
+        }
+
+        int dim = column.getDimension();
+        if (dim != 3) {
+            dim = 2;
+        }
+        return "OFGDB_GEOMETRY(" + kind + "," + epsg + "," + dim + ")";
     }
 
     private void execSql(String sql, boolean ignoreIfExists) throws IOException {

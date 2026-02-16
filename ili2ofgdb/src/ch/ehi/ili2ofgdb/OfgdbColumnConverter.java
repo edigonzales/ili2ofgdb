@@ -32,9 +32,9 @@ import java.sql.Types;
 import com.vividsolutions.jts.io.ParseException;
 
 import ch.interlis.iom.IomObject;
-import ch.interlis.iox.IoxException;
-import ch.interlis.iox_j.jts.Iox2jtsException;
+import ch.interlis.iox_j.wkb.Iox2wkb;
 import ch.interlis.iox_j.wkb.Iox2wkbException;
+import ch.interlis.iox_j.wkb.Wkb2iox;
 import net.iharder.Base64;
 
 public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
@@ -164,15 +164,12 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			boolean is3D,double p)
 			throws SQLException, ConverterException {
 				if(value!=null){
-					Iox2fgdb conv=new Iox2fgdb(is3D?3:2);
-					//EhiLogger.debug("conv "+conv); // select st_asewkt(form) from tablea
+					Iox2wkb conv=new Iox2wkb(is3D?3:2);
 					try {
-						return conv.surface2wkb(value,!strokeArcs,p,srsid);
-					} catch (IoxException ex) {
+						return conv.surface2wkb(value,!strokeArcs,p,false);
+					} catch (Iox2wkbException ex) {
 						throw new ConverterException(ex);
-					} catch (Iox2jtsException ex) {
-                        throw new ConverterException(ex);
-                    }
+					}
 				}
 				return null;
 		}
@@ -184,15 +181,12 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			boolean is3D,double p)
 			throws SQLException, ConverterException {
 				if(value!=null){
-					Iox2fgdb conv=new Iox2fgdb(is3D?3:2);
-					//EhiLogger.debug("conv "+conv); // select st_asewkt(form) from tablea
+					Iox2wkb conv=new Iox2wkb(is3D?3:2);
 					try {
-						return conv.multisurface2wkb(value,!strokeArcs,p,srsid);
-					} catch (IoxException ex) {
+						return conv.multisurface2wkb(value,!strokeArcs,p,false);
+					} catch (Iox2wkbException ex) {
 						throw new ConverterException(ex);
-					} catch (Iox2jtsException ex) {
-                        throw new ConverterException(ex);
-                    }
+					}
 				}
 				return null;
 		}
@@ -200,9 +194,9 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 		public java.lang.Object fromIomCoord(IomObject value, int srsid,boolean is3D)
 			throws SQLException, ConverterException {
 			if(value!=null){
-				Iox2fgdb conv=new Iox2fgdb(is3D?3:2);
+				Iox2wkb conv=new Iox2wkb(is3D?3:2);
 				try {
-					return conv.coord2wkb(value,srsid);
+					return conv.coord2wkb(value);
 				} catch (Iox2wkbException ex) {
 					throw new ConverterException(ex);
 				}
@@ -213,14 +207,12 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 		public java.lang.Object fromIomPolyline(IomObject value, int srsid,boolean is3D,double p)
 			throws SQLException, ConverterException {
 			if(value!=null){
-				Iox2fgdb conv=new Iox2fgdb(is3D?3:2);
+				Iox2wkb conv=new Iox2wkb(is3D?3:2);
 				try {
-					return conv.polyline2wkb(value,false,!strokeArcs,p,srsid);
-				} catch (IoxException ex) {
+					return conv.polyline2wkb(value,false,!strokeArcs,p);
+				} catch (Iox2wkbException ex) {
 					throw new ConverterException(ex);
-				} catch (Iox2jtsException ex) {
-                    throw new ConverterException(ex);
-                }
+				}
 			}
 			return null;
 		}
@@ -228,14 +220,12 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 		public java.lang.Object fromIomMultiPolyline(IomObject value, int srsid,boolean is3D,double p)
 			throws SQLException, ConverterException {
 			if(value!=null){
-				Iox2fgdb conv=new Iox2fgdb(is3D?3:2);
+				Iox2wkb conv=new Iox2wkb(is3D?3:2);
 				try {
-					return conv.multiline2wkb(value,!strokeArcs,p,srsid);
-				} catch (IoxException ex) {
+					return conv.multiline2wkb(value,!strokeArcs,p);
+				} catch (Iox2wkbException ex) {
 					throw new ConverterException(ex);
-				} catch (Iox2jtsException ex) {
-                    throw new ConverterException(ex);
-                }
+				}
 			}
 			return null;
 		}
@@ -249,12 +239,10 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 				if(bv==null){
 					return null;
 				}
-				Ofgdb2iox conv=new Ofgdb2iox();
+				Wkb2iox conv=new Wkb2iox();
 				try {
 					return conv.read(bv);
 				} catch (ParseException e) {
-					throw new ConverterException(e);
-				} catch (IoxException e) {
 					throw new ConverterException(e);
 				}
 			}
@@ -268,12 +256,10 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 				if(bv==null){
 					return null;
 				}
-				Ofgdb2iox conv=new Ofgdb2iox();
+				Wkb2iox conv=new Wkb2iox();
 				try {
 					return conv.read(bv);
 				} catch (ParseException e) {
-					throw new ConverterException(e);
-				} catch (IoxException e) {
 					throw new ConverterException(e);
 				}
 			}
@@ -287,12 +273,10 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			if(bv==null){
 				return null;
 			}
-			Ofgdb2iox conv=new Ofgdb2iox();
+			Wkb2iox conv=new Wkb2iox();
 			try {
 				return conv.read(bv);
 			} catch (ParseException e) {
-				throw new ConverterException(e);
-			} catch (IoxException e) {
 				throw new ConverterException(e);
 			}
 		}
@@ -306,12 +290,10 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 				if(bv==null){
 					return null;
 				}
-				Ofgdb2iox conv=new Ofgdb2iox();
+				Wkb2iox conv=new Wkb2iox();
 				try {
 					return conv.read(bv);
 				} catch (ParseException e) {
-					throw new ConverterException(e);
-				} catch (IoxException e) {
 					throw new ConverterException(e);
 				}
 			}
@@ -325,12 +307,10 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			if(bv==null){
 				return null;
 			}
-			Ofgdb2iox conv=new Ofgdb2iox();
+			Wkb2iox conv=new Wkb2iox();
 			try {
 				return conv.read(bv);
 			} catch (ParseException e) {
-				throw new ConverterException(e);
-			} catch (IoxException e) {
 				throw new ConverterException(e);
 			}
 		}

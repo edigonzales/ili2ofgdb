@@ -8,6 +8,7 @@
 #include "gdal.h"
 #include "ogr_api.h"
 #include "ogr_core.h"
+#include "ogr_srs_api.h"
 
 #include <algorithm>
 #include <cctype>
@@ -218,6 +219,8 @@ bool equals_ci(const std::string& lhs, const std::string& rhs) {
   return to_upper_copy(lhs) == to_upper_copy(rhs);
 }
 
+static const std::string kByteLiteralPrefix = "__OFGDB_BYTES_B64__:";
+
 bool contains_ci(const std::string& text, const std::string& needle) {
   if (needle.empty()) {
     return true;
@@ -320,6 +323,132 @@ int find_field_index_ci(OGRFeatureDefnH defn, const char* field_name) {
   return -1;
 }
 
+int find_geom_field_index_ci(OGRFeatureDefnH defn, const char* field_name) {
+  if (defn == nullptr || field_name == nullptr) {
+    return -1;
+  }
+  std::string wanted = to_upper_copy(field_name);
+  int count = OGR_FD_GetGeomFieldCount(defn);
+  for (int i = 0; i < count; i++) {
+    OGRGeomFieldDefnH geom = OGR_FD_GetGeomFieldDefn(defn, i);
+    if (geom == nullptr) {
+      continue;
+    }
+    const char* name = OGR_GFld_GetNameRef(geom);
+    if (name != nullptr && to_upper_copy(name) == wanted) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+struct GeometrySqlColumnSpec {
+  std::string name;
+  OGRwkbGeometryType ogr_type = wkbUnknown;
+  int epsg = 0;
+  bool nullable = true;
+};
+
+bool parse_int32_strict(const std::string& in, int* out) {
+  if (out == nullptr) {
+    return false;
+  }
+  try {
+    size_t consumed = 0;
+    long value = std::stol(trim(in), &consumed, 10);
+    if (consumed != trim(in).size()) {
+      return false;
+    }
+    if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max()) {
+      return false;
+    }
+    *out = static_cast<int>(value);
+    return true;
+  } catch (const std::exception&) {
+    return false;
+  }
+}
+
+bool decode_byte_literal_value(const std::string& in, std::vector<GByte>* out) {
+  if (out == nullptr) {
+    return false;
+  }
+  out->clear();
+  if (in.rfind(kByteLiteralPrefix, 0) != 0) {
+    return false;
+  }
+  std::string encoded = in.substr(kByteLiteralPrefix.size());
+  std::vector<GByte> decoded(encoded.begin(), encoded.end());
+  decoded.push_back('\0');
+  int decoded_size = CPLBase64DecodeInPlace(decoded.data());
+  if (decoded_size < 0) {
+    return false;
+  }
+  decoded.resize(static_cast<size_t>(decoded_size));
+  *out = std::move(decoded);
+  return true;
+}
+
+OGRwkbGeometryType map_geometry_kind(const std::string& kind_raw, int dim) {
+  std::string kind = to_upper_copy(trim(kind_raw));
+  OGRwkbGeometryType base = wkbUnknown;
+  if (kind == "POINT") {
+    base = wkbPoint;
+  } else if (kind == "LINE") {
+    base = wkbLineString;
+  } else if (kind == "POLYGON") {
+    base = wkbPolygon;
+  } else {
+    return wkbUnknown;
+  }
+  if (dim == 3) {
+    return wkbSetZ(base);
+  }
+  if (dim == 2) {
+    return base;
+  }
+  return wkbUnknown;
+}
+
+bool parse_ofgdb_geometry_type(
+    const std::string& column_name,
+    const std::string& type_token,
+    const std::string& full_definition,
+    GeometrySqlColumnSpec* out) {
+  if (out == nullptr) {
+    return false;
+  }
+  std::string token = trim(type_token);
+  std::string token_upper = to_upper_copy(token);
+  if (token_upper.rfind("OFGDB_GEOMETRY(", 0) != 0 || token.empty() || token.back() != ')') {
+    return false;
+  }
+  size_t open = token.find('(');
+  size_t close = token.rfind(')');
+  if (open == std::string::npos || close == std::string::npos || close <= open + 1) {
+    return false;
+  }
+  std::vector<std::string> args = split(token.substr(open + 1, close - open - 1), ',');
+  if (args.size() != 3) {
+    return false;
+  }
+  int epsg = 0;
+  int dim = 0;
+  if (!parse_int32_strict(args[1], &epsg) || !parse_int32_strict(args[2], &dim)) {
+    return false;
+  }
+  OGRwkbGeometryType type = map_geometry_kind(args[0], dim);
+  if (type == wkbUnknown) {
+    return false;
+  }
+
+  out->name = column_name;
+  out->ogr_type = type;
+  out->epsg = epsg;
+  out->nullable = !contains_ci(full_definition, "NOT NULL");
+  return true;
+}
+
 bool contains_int64_bound_hint(const std::string& column_definition) {
   if (column_definition.empty()) {
     return false;
@@ -362,7 +491,6 @@ OGRFieldType map_field_type_from_column_definition(const std::string& type_name,
 }
 
 void set_field_from_literal(OGRFeatureH feat, OGRFieldDefnH fld_defn, int idx, const std::string& raw_value) {
-  static const std::string kByteLiteralPrefix = "__OFGDB_BYTES_B64__:";
   std::string value = trim(raw_value);
   if (equals_ci(value, "NULL")) {
     OGR_F_SetFieldNull(feat, idx);
@@ -383,24 +511,90 @@ void set_field_from_literal(OGRFeatureH feat, OGRFieldDefnH fld_defn, int idx, c
       OGR_F_SetFieldDouble(feat, idx, std::atof(value.c_str()));
       return;
     case OFTBinary:
-      if (value.rfind(kByteLiteralPrefix, 0) == 0) {
-        std::string encoded = value.substr(kByteLiteralPrefix.size());
-        std::vector<GByte> decoded(encoded.begin(), encoded.end());
-        decoded.push_back('\0');
-        int decoded_size = CPLBase64DecodeInPlace(decoded.data());
-        if (decoded_size < 0) {
-          OGR_F_SetFieldBinary(feat, idx, 0, nullptr);
+      {
+        std::vector<GByte> decoded;
+        if (decode_byte_literal_value(value, &decoded)) {
+          OGR_F_SetFieldBinary(feat, idx, static_cast<int>(decoded.size()), decoded.empty() ? nullptr : decoded.data());
         } else {
-          OGR_F_SetFieldBinary(feat, idx, decoded_size, decoded.data());
+          OGR_F_SetFieldBinary(feat, idx, static_cast<int>(value.size()), reinterpret_cast<const GByte*>(value.data()));
         }
-      } else {
-        OGR_F_SetFieldBinary(feat, idx, static_cast<int>(value.size()), reinterpret_cast<const GByte*>(value.data()));
       }
       return;
     default:
       OGR_F_SetFieldString(feat, idx, value.c_str());
       return;
   }
+}
+
+bool set_geometry_from_literal(OGRFeatureH feat, int geom_idx, const std::string& raw_value) {
+  if (feat == nullptr || geom_idx < 0) {
+    return false;
+  }
+  std::string value = trim(raw_value);
+  if (equals_ci(value, "NULL")) {
+    return OGR_F_SetGeomField(feat, geom_idx, nullptr) == OGRERR_NONE;
+  }
+  if (!value.empty() && value.front() == '\'') {
+    value = unquote(value);
+  }
+  std::vector<GByte> decoded;
+  if (!decode_byte_literal_value(value, &decoded)) {
+    return false;
+  }
+  if (decoded.empty()) {
+    return OGR_F_SetGeomField(feat, geom_idx, nullptr) == OGRERR_NONE;
+  }
+  OGRGeometryH geom = nullptr;
+  OGRErr err = OGR_G_CreateFromWkb(decoded.data(), nullptr, &geom, static_cast<int>(decoded.size()));
+  if (err != OGRERR_NONE || geom == nullptr) {
+    return false;
+  }
+  err = OGR_F_SetGeomFieldDirectly(feat, geom_idx, geom);
+  if (err != OGRERR_NONE) {
+    OGR_G_DestroyGeometry(geom);
+    return false;
+  }
+  return true;
+}
+
+bool set_column_from_literal(OGRFeatureH feat, OGRFeatureDefnH defn, const std::string& column_name, const std::string& raw_value) {
+  if (feat == nullptr || defn == nullptr) {
+    return false;
+  }
+  int idx = find_field_index_ci(defn, column_name.c_str());
+  if (idx >= 0) {
+    OGRFieldDefnH fld = OGR_FD_GetFieldDefn(defn, idx);
+    if (fld == nullptr) {
+      return false;
+    }
+    set_field_from_literal(feat, fld, idx, raw_value);
+    return true;
+  }
+  int geom_idx = find_geom_field_index_ci(defn, column_name.c_str());
+  if (geom_idx >= 0) {
+    return set_geometry_from_literal(feat, geom_idx, raw_value);
+  }
+  return false;
+}
+
+bool set_geometry_from_wkb_bytes(OGRFeatureH feat, int geom_idx, const uint8_t* data, int32_t size) {
+  if (feat == nullptr || geom_idx < 0 || size < 0) {
+    return false;
+  }
+  if (data == nullptr || size == 0) {
+    return OGR_F_SetGeomField(feat, geom_idx, nullptr) == OGRERR_NONE;
+  }
+  OGRGeometryH geom = nullptr;
+  OGRErr err = OGR_G_CreateFromWkb(data, nullptr, &geom, size);
+  if (err != OGRERR_NONE || geom == nullptr) {
+    return false;
+  }
+  err = OGR_F_SetGeomFieldDirectly(feat, geom_idx, geom);
+  if (err != OGRERR_NONE) {
+    OGR_G_DestroyGeometry(geom);
+    return false;
+  }
+  return true;
 }
 
 std::string format_filter_literal(OGRFeatureH feat, int field_idx) {
@@ -1024,12 +1218,20 @@ class GdalBackend final : public OpenFgdbBackend {
       return fail(OFGDB_ERR_INVALID_ARG, "invalid row handle or column name");
     }
     int idx = find_field_index_ci(OGR_F_GetDefnRef(row->feature), column_name);
-    if (idx < 0) {
-      return fail(OFGDB_ERR_NOT_FOUND, std::string("unknown column: ") + column_name);
+    if (idx >= 0) {
+      OGR_F_SetFieldBinary(row->feature, idx, size, data);
+      last_error_.clear();
+      return OFGDB_OK;
     }
-    OGR_F_SetFieldBinary(row->feature, idx, size, data);
-    last_error_.clear();
-    return OFGDB_OK;
+    int geom_idx = find_geom_field_index_ci(OGR_F_GetDefnRef(row->feature), column_name);
+    if (geom_idx >= 0) {
+      if (!set_geometry_from_wkb_bytes(row->feature, geom_idx, data, size)) {
+        return fail_from_cpl(OFGDB_ERR_INVALID_ARG, "failed to set geometry from blob bytes");
+      }
+      last_error_.clear();
+      return OFGDB_OK;
+    }
+    return fail(OFGDB_ERR_NOT_FOUND, std::string("unknown column: ") + column_name);
   }
 
   int set_geometry(uint64_t row_handle, const uint8_t* wkb, int32_t size) override {
@@ -1072,12 +1274,21 @@ class GdalBackend final : public OpenFgdbBackend {
       return fail(OFGDB_ERR_INVALID_ARG, "invalid row handle or column name");
     }
     int idx = find_field_index_ci(OGR_F_GetDefnRef(row->feature), column_name);
-    if (idx < 0) {
-      return fail(OFGDB_ERR_NOT_FOUND, std::string("unknown column: ") + column_name);
+    if (idx >= 0) {
+      OGR_F_SetFieldNull(row->feature, idx);
+      last_error_.clear();
+      return OFGDB_OK;
     }
-    OGR_F_SetFieldNull(row->feature, idx);
-    last_error_.clear();
-    return OFGDB_OK;
+    int geom_idx = find_geom_field_index_ci(OGR_F_GetDefnRef(row->feature), column_name);
+    if (geom_idx >= 0) {
+      OGRErr err = OGR_F_SetGeomField(row->feature, geom_idx, nullptr);
+      if (err != OGRERR_NONE) {
+        return fail_from_cpl(map_ogr_error(err), "failed to clear geometry");
+      }
+      last_error_.clear();
+      return OFGDB_OK;
+    }
+    return fail(OFGDB_ERR_NOT_FOUND, std::string("unknown column: ") + column_name);
   }
 
   int list_domains(uint64_t db_handle, uint64_t* cursor_handle) override {
@@ -1486,10 +1697,15 @@ class GdalBackend final : public OpenFgdbBackend {
     }
     if (row->kind == RowKind::kFeature && row->feature != nullptr) {
       int idx = find_field_index_ci(OGR_F_GetDefnRef(row->feature), column_name);
-      if (idx < 0) {
-        *out_is_null = 1;
-      } else {
+      if (idx >= 0) {
         *out_is_null = OGR_F_IsFieldSetAndNotNull(row->feature, idx) ? 0 : 1;
+      } else {
+        int geom_idx = find_geom_field_index_ci(OGR_F_GetDefnRef(row->feature), column_name);
+        if (geom_idx < 0) {
+          *out_is_null = 1;
+        } else {
+          *out_is_null = OGR_F_GetGeomFieldRef(row->feature, geom_idx) != nullptr ? 0 : 1;
+        }
       }
     } else {
       const SyntheticValue* v = get_synthetic_value_ci(row->synthetic_values, column_name);
@@ -1591,28 +1807,59 @@ class GdalBackend final : public OpenFgdbBackend {
       return OFGDB_OK;
     }
     int idx = find_field_index_ci(OGR_F_GetDefnRef(row->feature), column_name);
-    if (idx < 0 || !OGR_F_IsFieldSetAndNotNull(row->feature, idx)) {
+    if (idx >= 0) {
+      if (!OGR_F_IsFieldSetAndNotNull(row->feature, idx)) {
+        last_error_.clear();
+        return OFGDB_OK;
+      }
+      OGRFieldDefnH fld = OGR_F_GetFieldDefnRef(row->feature, idx);
+      if (fld == nullptr) {
+        return fail(OFGDB_ERR_INTERNAL, "failed to inspect field definition");
+      }
+      if (OGR_Fld_GetType(fld) != OFTBinary) {
+        return fail(OFGDB_ERR_INVALID_ARG, "row value is not blob");
+      }
+      int size = 0;
+      const GByte* data = OGR_F_GetFieldAsBinary(row->feature, idx, &size);
+      if (size < 0 || size > std::numeric_limits<int32_t>::max()) {
+        return fail(OFGDB_ERR_INTERNAL, "blob too large");
+      }
+      *out_size = size;
+      if (size > 0 && data != nullptr) {
+        *out_data = dup_bytes(data, size);
+        if (*out_data == nullptr) {
+          return fail(OFGDB_ERR_INTERNAL, "out of memory");
+        }
+      }
       last_error_.clear();
       return OFGDB_OK;
     }
-    OGRFieldDefnH fld = OGR_F_GetFieldDefnRef(row->feature, idx);
-    if (fld == nullptr) {
-      return fail(OFGDB_ERR_INTERNAL, "failed to inspect field definition");
-    }
-    if (OGR_Fld_GetType(fld) != OFTBinary) {
-      return fail(OFGDB_ERR_INVALID_ARG, "row value is not blob");
-    }
-    int size = 0;
-    const GByte* data = OGR_F_GetFieldAsBinary(row->feature, idx, &size);
-    if (size < 0 || size > std::numeric_limits<int32_t>::max()) {
-      return fail(OFGDB_ERR_INTERNAL, "blob too large");
-    }
-    *out_size = size;
-    if (size > 0 && data != nullptr) {
-      *out_data = dup_bytes(data, size);
-      if (*out_data == nullptr) {
-        return fail(OFGDB_ERR_INTERNAL, "out of memory");
+    int geom_idx = find_geom_field_index_ci(OGR_F_GetDefnRef(row->feature), column_name);
+    if (geom_idx >= 0) {
+      OGRGeometryH geom = OGR_F_GetGeomFieldRef(row->feature, geom_idx);
+      if (geom == nullptr) {
+        last_error_.clear();
+        return OFGDB_OK;
       }
+      int wkb_size = OGR_G_WkbSize(geom);
+      if (wkb_size < 0 || wkb_size > std::numeric_limits<int32_t>::max()) {
+        return fail(OFGDB_ERR_INTERNAL, "geometry too large");
+      }
+      if (wkb_size > 0) {
+        uint8_t* buffer = static_cast<uint8_t*>(std::malloc(static_cast<size_t>(wkb_size)));
+        if (buffer == nullptr) {
+          return fail(OFGDB_ERR_INTERNAL, "out of memory");
+        }
+        OGRErr err = OGR_G_ExportToWkb(geom, wkbNDR, buffer);
+        if (err != OGRERR_NONE) {
+          std::free(buffer);
+          return fail_from_cpl(map_ogr_error(err), "failed to export geometry to WKB");
+        }
+        *out_data = buffer;
+      }
+      *out_size = wkb_size;
+      last_error_.clear();
+      return OFGDB_OK;
     }
     last_error_.clear();
     return OFGDB_OK;
@@ -1642,8 +1889,6 @@ class GdalBackend final : public OpenFgdbBackend {
     if (wkb_size < 0 || wkb_size > std::numeric_limits<int32_t>::max()) {
       return fail(OFGDB_ERR_INTERNAL, "geometry too large");
     }
-    uint8_t* data = dup_bytes(reinterpret_cast<const uint8_t*>(""), 0);
-    (void)data;
     if (wkb_size > 0) {
       uint8_t* buffer = static_cast<uint8_t*>(std::malloc(static_cast<size_t>(wkb_size)));
       if (buffer == nullptr) {
@@ -1937,19 +2182,15 @@ class GdalBackend final : public OpenFgdbBackend {
       if (existing != nullptr) {
         return OFGDB_OK;
       }
-      char** layer_options = nullptr;
-      layer_options = CSLAddString(layer_options, "TARGET_ARCGIS_VERSION=ARCGIS_PRO_3_2_OR_LATER");
-      OGRLayerH layer = GDALDatasetCreateLayer(db.dataset, table_name.c_str(), nullptr, wkbNone, layer_options);
-      CSLDestroy(layer_options);
-      if (layer == nullptr) {
-        return fail_from_cpl(OFGDB_ERR_INTERNAL, "failed to create table");
-      }
+
+      std::vector<std::string> attribute_defs;
+      std::vector<GeometrySqlColumnSpec> geometry_defs;
       for (const std::string& def : split_sql_top_level(defs)) {
-        std::string trimmed = trim(def);
-        if (trimmed.empty()) {
+        std::string trimmed_def = trim(def);
+        if (trimmed_def.empty()) {
           continue;
         }
-        std::vector<std::string> parts = split_ws_tokens(trimmed);
+        std::vector<std::string> parts = split_ws_tokens(trimmed_def);
         if (parts.size() < 2) {
           continue;
         }
@@ -1958,9 +2199,56 @@ class GdalBackend final : public OpenFgdbBackend {
             first_token == "UNIQUE" || first_token == "CHECK") {
           continue;
         }
+        GeometrySqlColumnSpec geometry_spec;
+        if (parse_ofgdb_geometry_type(parts[0], parts[1], trimmed_def, &geometry_spec)) {
+          geometry_defs.push_back(geometry_spec);
+        } else {
+          attribute_defs.push_back(trimmed_def);
+        }
+      }
+      if (geometry_defs.size() > 1) {
+        return fail(OFGDB_ERR_INVALID_ARG, "CREATE TABLE with more than one OFGDB_GEOMETRY column is not supported");
+      }
+
+      char** layer_options = nullptr;
+      layer_options = CSLAddString(layer_options, "TARGET_ARCGIS_VERSION=ARCGIS_PRO_3_2_OR_LATER");
+      OGRwkbGeometryType layer_geom_type = wkbNone;
+      OGRSpatialReferenceH layer_srs = nullptr;
+      if (!geometry_defs.empty()) {
+        const GeometrySqlColumnSpec& geom = geometry_defs.front();
+        layer_geom_type = geom.ogr_type;
+        std::string geometry_name_opt = std::string("GEOMETRY_NAME=") + geom.name;
+        layer_options = CSLAddString(layer_options, geometry_name_opt.c_str());
+        if (!geom.nullable) {
+          layer_options = CSLAddString(layer_options, "GEOMETRY_NULLABLE=NO");
+        }
+        if (geom.epsg > 0) {
+          layer_srs = OSRNewSpatialReference(nullptr);
+          if (layer_srs == nullptr || OSRImportFromEPSG(layer_srs, geom.epsg) != OGRERR_NONE) {
+            if (layer_srs != nullptr) {
+              OSRDestroySpatialReference(layer_srs);
+            }
+            CSLDestroy(layer_options);
+            return fail(OFGDB_ERR_INVALID_ARG, "invalid EPSG code in OFGDB_GEOMETRY definition");
+          }
+        }
+      }
+      OGRLayerH layer = GDALDatasetCreateLayer(db.dataset, table_name.c_str(), layer_srs, layer_geom_type, layer_options);
+      if (layer_srs != nullptr) {
+        OSRDestroySpatialReference(layer_srs);
+      }
+      CSLDestroy(layer_options);
+      if (layer == nullptr) {
+        return fail_from_cpl(OFGDB_ERR_INTERNAL, "failed to create table");
+      }
+      for (const std::string& attribute_def : attribute_defs) {
+        std::vector<std::string> parts = split_ws_tokens(attribute_def);
+        if (parts.size() < 2) {
+          continue;
+        }
         std::string col_name = parts[0];
         std::string type_name = parts[1];
-        OGRFieldType field_type = map_field_type_from_column_definition(type_name, trimmed);
+        OGRFieldType field_type = map_field_type_from_column_definition(type_name, attribute_def);
         OGRFieldDefnH fld = OGR_Fld_Create(col_name.c_str(), field_type);
         if (fld == nullptr) {
           return fail(OFGDB_ERR_INTERNAL, "failed to allocate field definition");
@@ -2075,13 +2363,10 @@ class GdalBackend final : public OpenFgdbBackend {
         return fail(OFGDB_ERR_INTERNAL, "failed to allocate feature");
       }
       for (size_t i = 0; i < cols.size(); i++) {
-        int idx = find_field_index_ci(defn, cols[i].c_str());
-        if (idx < 0) {
+        if (!set_column_from_literal(feat, defn, cols[i], values[i])) {
           OGR_F_Destroy(feat);
-          return fail(OFGDB_ERR_NOT_FOUND, std::string("unknown column: ") + cols[i]);
+          return fail(OFGDB_ERR_INVALID_ARG, std::string("unknown column or invalid value: ") + cols[i]);
         }
-        OGRFieldDefnH fld = OGR_FD_GetFieldDefn(defn, idx);
-        set_field_from_literal(feat, fld, idx, values[i]);
       }
       OGRErr err = OGR_L_CreateFeature(layer, feat);
       OGR_F_Destroy(feat);
@@ -2122,12 +2407,11 @@ class GdalBackend final : public OpenFgdbBackend {
           }
           std::string col = trim(assignment.substr(0, eq));
           std::string raw_value = assignment.substr(eq + 1);
-          int idx = find_field_index_ci(defn, col.c_str());
-          if (idx < 0) {
-            continue;
+          if (!set_column_from_literal(feat, defn, col, raw_value)) {
+            OGR_F_Destroy(feat);
+            OGR_L_SetAttributeFilter(layer, nullptr);
+            return fail(OFGDB_ERR_INVALID_ARG, std::string("unknown column or invalid value in UPDATE: ") + col);
           }
-          OGRFieldDefnH fld = OGR_FD_GetFieldDefn(defn, idx);
-          set_field_from_literal(feat, fld, idx, raw_value);
         }
         OGRErr err = OGR_L_SetFeature(layer, feat);
         OGR_F_Destroy(feat);

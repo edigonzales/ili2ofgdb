@@ -8,6 +8,8 @@ import static org.junit.Assert.fail;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.List;
 
 import org.junit.Test;
@@ -113,6 +115,47 @@ public class OpenFgdbSmokeTest {
     }
 
     @Test
+    public void geometryColumnIsRegisteredAndReadable() throws Exception {
+        OpenFgdb api = new OpenFgdb();
+        Path dbDir = Files.createTempDirectory("openfgdb4j-geom-").resolve("test.gdb");
+        long db = api.create(dbDir.toString());
+        try {
+            api.execSql(db, "CREATE TABLE t_geom(id INTEGER, shape OFGDB_GEOMETRY(POINT,2056,2) NOT NULL)");
+            long table = api.openTable(db, "t_geom");
+            try {
+                long row = api.createRow(table);
+                try {
+                    api.setInt32(row, "id", 11);
+                    api.setGeometry(row, pointWkb(2600000.5, 1200000.25));
+                    api.insert(table, row);
+                } finally {
+                    api.closeRow(row);
+                }
+
+                long cursor = api.search(table, "*", "");
+                try {
+                    long fetched = api.fetchRow(cursor);
+                    try {
+                        assertEquals(Integer.valueOf(11), api.rowGetInt32(fetched, "id"));
+                        byte[] geom = api.rowGetGeometry(fetched);
+                        assertTrue(geom != null && geom.length > 0);
+                        byte[] blobView = api.rowGetBlob(fetched, "shape");
+                        assertTrue(blobView != null && blobView.length > 0);
+                    } finally {
+                        api.closeRow(fetched);
+                    }
+                } finally {
+                    api.closeCursor(cursor);
+                }
+            } finally {
+                api.closeTable(db, table);
+            }
+        } finally {
+            api.close(db);
+        }
+    }
+
+    @Test
     public void gdalFailureDoesNotFallback() throws Exception {
         Assume.assumeTrue("1".equals(System.getenv("OPENFGDB4J_GDAL_FORCE_FAIL")));
         OpenFgdb api = new OpenFgdb();
@@ -158,5 +201,14 @@ public class OpenFgdbSmokeTest {
         } finally {
             api.closeTable(db, tableHandle);
         }
+    }
+
+    private static byte[] pointWkb(double x, double y) {
+        ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + 8 + 8).order(ByteOrder.LITTLE_ENDIAN);
+        buffer.put((byte) 1); // little endian
+        buffer.putInt(1);     // WKB Point
+        buffer.putDouble(x);
+        buffer.putDouble(y);
+        return buffer.array();
     }
 }

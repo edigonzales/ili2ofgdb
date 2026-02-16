@@ -807,8 +807,10 @@ task ili2ofgdbBindistSmoke(type: Exec, dependsOn: [ili2ofgdbBindist]) {
 ROOT="$OFGDB_SMOKE_ROOT"
 ZIP="$OFGDB_SMOKE_ZIP"
 JAVA_BIN="$OFGDB_SMOKE_JAVA"
+JAVAC_BIN="${JAVA_BIN%/java}/javac"
 SMOKE_DIR="$ROOT/build/smoke/ili2ofgdb-bindist"
 MODEL_DIR="$ROOT/ili2ofgdb/test/data/smoke/abbaustellen/models"
+DATA_XTF="$ROOT/ili2ofgdb/test/data/smoke/abbaustellen/data/ch.so.afu.abbaustellen.relational.xtf"
 rm -rf "$SMOKE_DIR"
 mkdir -p "$SMOKE_DIR/unpack" "$SMOKE_DIR/work"
 unzip -q "$ZIP" -d "$SMOKE_DIR/unpack"
@@ -821,8 +823,13 @@ if [ ! -f "$SMOKE_DIR/unpack/libs/libopenfgdb.dylib" ]; then
   echo "libopenfgdb.dylib missing in bindist" >&2
   exit 1
 fi
+if [ ! -f "$DATA_XTF" ]; then
+  echo "Smoke data file not found: $DATA_XTF" >&2
+  exit 1
+fi
 DB="$SMOKE_DIR/work/abbaustellen.gdb"
-LOG="$SMOKE_DIR/work/abbaustellen.log"
+SCHEMA_LOG="$SMOKE_DIR/work/schemaimport.log"
+IMPORT_LOG="$SMOKE_DIR/work/import.log"
 OPENFGDB4J_BACKEND=gdal "$JAVA_BIN" --enable-native-access=ALL-UNNAMED -jar "$JAR" \
   --dbfile "$DB" \
   --defaultSrsCode 2056 \
@@ -831,27 +838,121 @@ OPENFGDB4J_BACKEND=gdal "$JAVA_BIN" --enable-native-access=ALL-UNNAMED -jar "$JA
   --modeldir "$MODEL_DIR" \
   --models SO_AFU_ABBAUSTELLEN_20210630 \
   --trace \
-  --log "$LOG" \
+  --log "$SCHEMA_LOG" \
   --schemaimport
+OPENFGDB4J_BACKEND=gdal "$JAVA_BIN" --enable-native-access=ALL-UNNAMED -jar "$JAR" \
+  --dbfile "$DB" \
+  --defaultSrsCode 2056 \
+  --strokeArcs \
+  --nameByTopic \
+  --modeldir "$MODEL_DIR" \
+  --models SO_AFU_ABBAUSTELLEN_20210630 \
+  --trace \
+  --log "$IMPORT_LOG" \
+  --import "$DATA_XTF"
 if [ ! -d "$DB" ]; then
   echo "Schemaimport did not create $DB" >&2
   exit 1
 fi
-if [ ! -f "$LOG" ]; then
-  echo "Schemaimport did not write log file $LOG" >&2
+if [ ! -f "$SCHEMA_LOG" ]; then
+  echo "Schemaimport did not write log file $SCHEMA_LOG" >&2
   exit 1
 fi
-if grep -q "filegdbtable.cpp at line 838" "$LOG"; then
+if [ ! -f "$IMPORT_LOG" ]; then
+  echo "Import did not write log file $IMPORT_LOG" >&2
+  exit 1
+fi
+if grep -q "filegdbtable.cpp at line 838" "$SCHEMA_LOG" "$IMPORT_LOG"; then
   echo "Detected filegdbtable.cpp line 838 in smoke log" >&2
   exit 1
 fi
-if grep -q "skip domain assignment; column not found" "$LOG"; then
+if grep -q "skip domain assignment; column not found" "$SCHEMA_LOG" "$IMPORT_LOG"; then
   echo "Detected skipped domain assignment in smoke log" >&2
   exit 1
 fi
-if grep -q "skip relationship; key column missing" "$LOG"; then
+if grep -q "skip relationship; key column missing" "$SCHEMA_LOG" "$IMPORT_LOG"; then
   echo "Detected skipped relationship in smoke log" >&2
   exit 1
+fi
+OPENFGDB_JAR="$SMOKE_DIR/unpack/libs/openfgdb4j.jar"
+if [ ! -f "$OPENFGDB_JAR" ]; then
+  echo "openfgdb4j.jar missing in bindist" >&2
+  exit 1
+fi
+cat > "$SMOKE_DIR/work/SmokeInspector.java" <<'JAVA'
+import ch.ehi.openfgdb4j.OpenFgdb;
+
+public final class SmokeInspector {
+  public static void main(String[] args) throws Exception {
+    if (args.length != 1) {
+      throw new IllegalArgumentException("usage: SmokeInspector <dbfile>");
+    }
+    OpenFgdb api = new OpenFgdb();
+    long db = api.open(args[0]);
+    try {
+      if (api.listDomains(db).isEmpty()) {
+        throw new IllegalStateException("No domains found in smoke database.");
+      }
+      if (api.listRelationships(db).isEmpty()) {
+        throw new IllegalStateException("No relationship classes found in smoke database.");
+      }
+      long table = api.openTable(db, "gis_geometrie");
+      try {
+        long cursor = api.search(table, "*", "");
+        try {
+          int rowCount = 0;
+          int withGeometry = 0;
+          while (true) {
+            long row = api.fetchRow(cursor);
+            if (row == 0L) {
+              break;
+            }
+            rowCount++;
+            try {
+              byte[] geom = api.rowGetGeometry(row);
+              if (geom != null && geom.length > 0) {
+                withGeometry++;
+              }
+            } finally {
+              api.closeRow(row);
+            }
+          }
+          if (rowCount == 0) {
+            throw new IllegalStateException("gis_geometrie has no rows after import.");
+          }
+          if (withGeometry == 0) {
+            throw new IllegalStateException("No non-null geometry found in gis_geometrie.");
+          }
+        } finally {
+          api.closeCursor(cursor);
+        }
+      } finally {
+        api.closeTable(db, table);
+      }
+    } finally {
+      api.close(db);
+    }
+  }
+}
+JAVA
+"$JAVAC_BIN" -cp "$OPENFGDB_JAR" -d "$SMOKE_DIR/work" "$SMOKE_DIR/work/SmokeInspector.java"
+OPENFGDB4J_BACKEND=gdal "$JAVA_BIN" --enable-native-access=ALL-UNNAMED \
+  -Dopenfgdb4j.lib="$SMOKE_DIR/unpack/libs/libopenfgdb.dylib" \
+  -cp "$SMOKE_DIR/work:$OPENFGDB_JAR" \
+  SmokeInspector "$DB"
+if command -v ogrinfo >/dev/null 2>&1; then
+  OGR_LOG="$SMOKE_DIR/work/ogrinfo.log"
+  ogrinfo -al "$DB" > "$OGR_LOG" 2>&1
+  if ! awk '
+    /^Layer name: / { in_layer = ($0 ~ /gis_geometrie/); next }
+    in_layer && /^Geometry: / { if ($0 !~ /Geometry: None/) ok = 1; in_layer = 0 }
+    END { exit(ok ? 0 : 1) }
+  ' "$OGR_LOG"; then
+    echo "ogrinfo did not report a recognized geometry for layer gis_geometrie" >&2
+    exit 1
+  fi
+else
+  echo "Warning: ogrinfo not found; skipped external geometry recognition check" >&2
 fi
 echo "ili2ofgdbBindistSmoke OK: $DB"
 '''
