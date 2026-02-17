@@ -58,8 +58,8 @@ if (-not (Test-Path -LiteralPath $jarDir)) {
 New-Item -ItemType Directory -Path $classesDir -Force | Out-Null
 
 $mainSources = @()
-$mainSources += Get-ChildItem -Path (Join-Path $ProjectDir 'src/main/java') -Recurse -File -Filter '*.java' | ForEach-Object { $_.FullName }
-$mainSources += Get-ChildItem -Path (Join-Path $ProjectDir 'src/generated/java') -Recurse -File -Filter '*.java' | ForEach-Object { $_.FullName }
+$mainSources += @(Get-ChildItem -Path (Join-Path $ProjectDir 'src/main/java') -Recurse -File -Filter '*.java' | ForEach-Object { $_.FullName })
+$mainSources += @(Get-ChildItem -Path (Join-Path $ProjectDir 'src/generated/java') -Recurse -File -Filter '*.java' | ForEach-Object { $_.FullName })
 if ($mainSources.Count -eq 0) { throw 'No openfgdb4j Java sources found' }
 
 & $javac '--release' '22' '-d' $classesDir @mainSources
@@ -73,7 +73,7 @@ if (Test-Path -LiteralPath $ciClasses) {
 }
 New-Item -ItemType Directory -Path $ciClasses -Force | Out-Null
 
-$ciSources = Get-ChildItem -Path (Join-Path $ProjectDir 'src/test/java/ch/ehi/openfgdb4j/ci') -Recurse -File -Filter '*.java' | ForEach-Object { $_.FullName }
+$ciSources = @(Get-ChildItem -Path (Join-Path $ProjectDir 'src/test/java/ch/ehi/openfgdb4j/ci') -Recurse -File -Filter '*.java' | ForEach-Object { $_.FullName })
 if ($ciSources.Count -eq 0) {
   throw 'No CI smoke Java sources found in openfgdb4j/src/test/java/ch/ehi/openfgdb4j/ci'
 }
