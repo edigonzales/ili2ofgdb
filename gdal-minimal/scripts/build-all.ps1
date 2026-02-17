@@ -156,10 +156,20 @@ function Get-CmakeArchArg {
   return 'x64'
 }
 
-function Invoke-Cmake([string[]] $Args) {
-  & $CmakeBin @Args
+function Show-StageLibDir {
+  $libDir = Join-Path $StageDir 'lib'
+  Write-Host "Contents of $libDir"
+  if (Test-Path -LiteralPath $libDir) {
+    Get-ChildItem -LiteralPath $libDir -Force | ForEach-Object { Write-Host "  $($_.Name)" }
+  } else {
+    Write-Host '  <missing>'
+  }
+}
+
+function Invoke-Cmake([string[]] $CmakeArgs) {
+  & $CmakeBin @CmakeArgs
   if ($LASTEXITCODE -ne 0) {
-    throw "cmake command failed: $($Args -join ' ')"
+    throw "cmake command failed: $($CmakeArgs -join ' ')"
   }
 }
 
@@ -255,8 +265,15 @@ if (-not (Test-Path -LiteralPath $ProjLibCandidate1) -and -not (Test-Path -Liter
     "-DSQLITE3_LIBRARY=$StageDir/lib/sqlite3.lib"
   )
   Invoke-Cmake $cmArgs
-  Invoke-Cmake @('--build', $projBuild, '--config', 'Release', '--target', 'install')
-  Write-Host 'Built proj static.'
+  $projBuildArgs = @('--build', $projBuild, '--config', 'Release', '--target', 'install')
+  Invoke-Cmake $projBuildArgs
+  if (-not (Test-Path -LiteralPath $ProjLibCandidate1) -and -not (Test-Path -LiteralPath $ProjLibCandidate2)) {
+    Show-StageLibDir
+    throw "proj static library missing after build (expected $ProjLibCandidate1 or $ProjLibCandidate2)"
+  }
+  $projLibPath = $ProjLibCandidate1
+  if (-not (Test-Path -LiteralPath $projLibPath)) { $projLibPath = $ProjLibCandidate2 }
+  Write-Host "Built proj static: $projLibPath"
 } else {
   Write-Host 'proj already built.'
 }
@@ -298,8 +315,15 @@ if (-not (Test-Path -LiteralPath $GdalLibCandidate1) -and -not (Test-Path -Liter
     "-DSQLite3_LIBRARY=$StageDir/lib/sqlite3.lib"
   )
   Invoke-Cmake $cmArgs
-  Invoke-Cmake @('--build', $gdalBuild, '--config', 'Release', '--target', 'install')
-  Write-Host 'Built gdal static.'
+  $gdalBuildArgs = @('--build', $gdalBuild, '--config', 'Release', '--target', 'install')
+  Invoke-Cmake $gdalBuildArgs
+  if (-not (Test-Path -LiteralPath $GdalLibCandidate1) -and -not (Test-Path -LiteralPath $GdalLibCandidate2)) {
+    Show-StageLibDir
+    throw "gdal static library missing after build (expected $GdalLibCandidate1 or $GdalLibCandidate2)"
+  }
+  $gdalLibPath = $GdalLibCandidate1
+  if (-not (Test-Path -LiteralPath $gdalLibPath)) { $gdalLibPath = $GdalLibCandidate2 }
+  Write-Host "Built gdal static: $gdalLibPath"
 } else {
   Write-Host 'gdal already built.'
 }

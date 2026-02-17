@@ -75,12 +75,17 @@ jobs:
         run: |
           openfgdb4j/scripts/ci/build-and-test-unix.sh
 
+      - name: Setup MSVC developer command prompt (Windows)
+        if: matrix.runner_kind == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build and test (Windows)
         if: matrix.runner_kind == 'windows'
         shell: pwsh
         env:
           OPENFGDB4J_TARGET_OS: ${{ matrix.target_os }}
           OPENFGDB4J_TARGET_ARCH: ${{ matrix.target_arch }}
+          OPENFGDB4J_GDAL_MINIMAL_REBUILD: '1'
           CMAKE_BIN: cmake
           OPENFGDB4J_CMAKE_GENERATOR: Visual Studio 17 2022
         run: |
