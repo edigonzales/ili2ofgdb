@@ -115,7 +115,7 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: openfgdb4j/build/artifacts/${{ matrix.artifact_name }}
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 2
 
   artifact_index:
     name: artifact-index
@@ -168,4 +168,4 @@ jobs:
             artifact-index.txt
             artifact-files.txt
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 2

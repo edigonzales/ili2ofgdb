@@ -192,6 +192,12 @@ if ($env:OPENFGDB4J_GDAL_MINIMAL_REBUILD -eq '1') {
   Ensure-Dir (Join-Path $StageDir 'include')
 }
 
+# PROJ may need sqlite3.exe during resource/db generation.
+$stageBin = Join-Path $StageDir 'bin'
+if (Test-Path -LiteralPath $stageBin) {
+  $env:PATH = "$stageBin;$env:PATH"
+}
+
 $GdalVersion = Read-LockResolved 'GDAL_VERSION'
 $GdalArchive = Read-LockResolved 'GDAL_ARCHIVE'
 $GdalUrl = "https://github.com/OSGeo/gdal/archive/refs/tags/$GdalVersion.tar.gz"
@@ -265,7 +271,7 @@ if (-not (Test-Path -LiteralPath $ProjLibCandidate1) -and -not (Test-Path -Liter
     "-DSQLITE3_LIBRARY=$StageDir/lib/sqlite3.lib"
   )
   Invoke-Cmake $cmArgs
-  $projBuildArgs = @('--build', $projBuild, '--config', 'Release', '--target', 'install')
+  $projBuildArgs = @('--build', $projBuild, '--config', 'Release', '--target', 'install', '--verbose')
   Invoke-Cmake $projBuildArgs
   if (-not (Test-Path -LiteralPath $ProjLibCandidate1) -and -not (Test-Path -LiteralPath $ProjLibCandidate2)) {
     Show-StageLibDir
@@ -315,7 +321,7 @@ if (-not (Test-Path -LiteralPath $GdalLibCandidate1) -and -not (Test-Path -Liter
     "-DSQLite3_LIBRARY=$StageDir/lib/sqlite3.lib"
   )
   Invoke-Cmake $cmArgs
-  $gdalBuildArgs = @('--build', $gdalBuild, '--config', 'Release', '--target', 'install')
+  $gdalBuildArgs = @('--build', $gdalBuild, '--config', 'Release', '--target', 'install', '--verbose')
   Invoke-Cmake $gdalBuildArgs
   if (-not (Test-Path -LiteralPath $GdalLibCandidate1) -and -not (Test-Path -LiteralPath $GdalLibCandidate2)) {
     Show-StageLibDir
