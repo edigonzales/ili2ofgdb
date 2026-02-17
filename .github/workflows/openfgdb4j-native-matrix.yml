@@ -15,30 +15,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - id: linux-amd64
-            runs_on: ubuntu-24.04
-            target_os: linux
-            target_arch: amd64
-            runner_kind: unix
-            artifact_name: openfgdb4j-bin-linux-amd64
-          - id: linux-arm64
-            runs_on: ubuntu-24.04-arm
-            target_os: linux
-            target_arch: arm64
-            runner_kind: unix
-            artifact_name: openfgdb4j-bin-linux-arm64
-          - id: macos-amd64
-            runs_on: macos-15-intel
-            target_os: macos
-            target_arch: amd64
-            runner_kind: unix
-            artifact_name: openfgdb4j-bin-macos-amd64
-          - id: macos-arm64
-            runs_on: macos-15
-            target_os: macos
-            target_arch: arm64
-            runner_kind: unix
-            artifact_name: openfgdb4j-bin-macos-arm64
+          # - id: linux-amd64
+          #   runs_on: ubuntu-24.04
+          #   target_os: linux
+          #   target_arch: amd64
+          #   runner_kind: unix
+          #   artifact_name: openfgdb4j-bin-linux-amd64
+          # - id: linux-arm64
+          #   runs_on: ubuntu-24.04-arm
+          #   target_os: linux
+          #   target_arch: arm64
+          #   runner_kind: unix
+          #   artifact_name: openfgdb4j-bin-linux-arm64
+          # - id: macos-amd64
+          #   runs_on: macos-15-intel
+          #   target_os: macos
+          #   target_arch: amd64
+          #   runner_kind: unix
+          #   artifact_name: openfgdb4j-bin-macos-amd64
+          # - id: macos-arm64
+          #   runs_on: macos-15
+          #   target_os: macos
+          #   target_arch: arm64
+          #   runner_kind: unix
+          #   artifact_name: openfgdb4j-bin-macos-arm64
           - id: windows-amd64
             runs_on: windows-2025
             target_os: windows

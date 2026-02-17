@@ -266,7 +266,10 @@ if (-not (Test-Path -LiteralPath $ProjLibCandidate1) -and -not (Test-Path -Liter
     '-DENABLE_TIFF=OFF',
     '-DENABLE_CURL=OFF',
     '-DEMBED_RESOURCE_FILES=ON',
-    '-DUSE_ONLY_EMBEDDED_RESOURCE_FILES=ON',
+    # Keep embedded proj.db, but do not force embedded-only mode on Windows.
+    # With PROJ 9.6.0 this mode excludes Win32 helper code paths in filemanager.cpp
+    # and triggers unresolved UTF8/WString helpers during compilation.
+    '-DUSE_ONLY_EMBEDDED_RESOURCE_FILES=OFF',
     "-DSQLITE3_INCLUDE_DIR=$StageDir/include",
     "-DSQLITE3_LIBRARY=$StageDir/lib/sqlite3.lib"
   )
