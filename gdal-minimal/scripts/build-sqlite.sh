@@ -1,7 +1,8 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
 source "$SCRIPT_DIR/common.sh"
 
 require_cmd make
@@ -27,8 +28,13 @@ SQLITE_BUILD="$BUILD_WORK_DIR/sqlite"
 rm -rf "$SQLITE_BUILD"
 mkdir -p "$SQLITE_BUILD"
 
+cflags=("-O2" "-fPIC")
+ldflags=()
+append_macos_cflags cflags
+append_macos_cflags ldflags
+
 pushd "$SQLITE_BUILD" >/dev/null
-CFLAGS="-O2 -fPIC -arch arm64" LDFLAGS="-arch arm64" \
+CFLAGS="${cflags[*]}" LDFLAGS="${ldflags[*]}" \
   "$SQLITE_SRC/configure" \
   --prefix="$STAGE_DIR" \
   --disable-shared \

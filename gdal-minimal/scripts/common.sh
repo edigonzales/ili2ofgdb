@@ -1,7 +1,7 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GDAL_MINIMAL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MANIFEST_DIR="$GDAL_MINIMAL_DIR/manifests"
 VERSIONS_FILE="$MANIFEST_DIR/versions.lock"
@@ -12,11 +12,48 @@ SRC_DIR="$GDAL_MINIMAL_DIR/third_party/src"
 BUILD_WORK_DIR="$GDAL_MINIMAL_DIR/build/work"
 STAGE_DIR="${OPENFGDB4J_GDAL_MINIMAL_ROOT:-$GDAL_MINIMAL_DIR/build/stage}"
 
-CMAKE_BIN="${CMAKE_BIN:-/Applications/CMake.app/Contents/bin/cmake}"
+if [[ -n "${CMAKE_BIN:-}" ]]; then
+  CMAKE_BIN="${CMAKE_BIN}"
+elif [[ -x "/Applications/CMake.app/Contents/bin/cmake" ]]; then
+  CMAKE_BIN="/Applications/CMake.app/Contents/bin/cmake"
+else
+  CMAKE_BIN="cmake"
+fi
+CMAKE_GENERATOR="${OPENFGDB4J_CMAKE_GENERATOR:-Unix Makefiles}"
+
+normalize_target_os() {
+  local raw="${1:-}"
+  raw="$(echo "$raw" | tr '[:upper:]' '[:lower:]')"
+  case "$raw" in
+    darwin|mac|macos|osx) echo "macos" ;;
+    linux) echo "linux" ;;
+    windows|win|mingw*|msys*|cygwin*) echo "windows" ;;
+    *) echo "$raw" ;;
+  esac
+}
+
+normalize_target_arch() {
+  local raw="${1:-}"
+  raw="$(echo "$raw" | tr '[:upper:]' '[:lower:]')"
+  case "$raw" in
+    x86_64|amd64) echo "amd64" ;;
+    aarch64|arm64) echo "arm64" ;;
+    *) echo "$raw" ;;
+  esac
+}
+
+TARGET_OS="${OPENFGDB4J_TARGET_OS:-$(uname -s)}"
+TARGET_ARCH="${OPENFGDB4J_TARGET_ARCH:-$(uname -m)}"
+TARGET_OS="$(normalize_target_os "$TARGET_OS")"
+TARGET_ARCH="$(normalize_target_arch "$TARGET_ARCH")"
 
 cpu_count() {
-  local n
-  n=$(sysctl -n hw.logicalcpu 2>/dev/null || true)
+  local n=""
+  if command -v nproc >/dev/null 2>&1; then
+    n="$(nproc)"
+  elif command -v sysctl >/dev/null 2>&1; then
+    n="$(sysctl -n hw.logicalcpu 2>/dev/null || true)"
+  fi
   if [[ -z "$n" || "$n" -le 0 ]]; then
     n=4
   fi
@@ -30,10 +67,12 @@ load_versions() {
     echo "Missing versions file: $VERSIONS_FILE" >&2
     exit 1
   fi
+  # shellcheck source=/dev/null
   source "$VERSIONS_FILE"
 }
 
 require_cmd() {
+  local cmd
   for cmd in "$@"; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
       echo "Required command not found: $cmd" >&2
@@ -44,6 +83,20 @@ require_cmd() {
 
 ensure_dirs() {
   mkdir -p "$DOWNLOAD_DIR" "$SRC_DIR" "$BUILD_WORK_DIR" "$STAGE_DIR"
+}
+
+sha256_file() {
+  local file_path="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file_path" | awk '{print $1}'
+    return
+  fi
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file_path" | awk '{print $1}'
+    return
+  fi
+  echo "No SHA256 tool found (need sha256sum or shasum)" >&2
+  exit 1
 }
 
 expected_sha() {
@@ -61,7 +114,7 @@ verify_sha() {
     exit 1
   fi
   local actual
-  actual="$(shasum -a 256 "$file_path" | awk '{print $1}')"
+  actual="$(sha256_file "$file_path")"
   if [[ "$actual" != "$expected" ]]; then
     echo "SHA256 mismatch for $archive_name" >&2
     echo "  expected: $expected" >&2
@@ -122,4 +175,33 @@ stage_lib() {
 
 stage_include_dir() {
   echo "$STAGE_DIR/include"
+}
+
+macos_arch_name() {
+  case "$TARGET_ARCH" in
+    amd64) echo "x86_64" ;;
+    arm64) echo "arm64" ;;
+    *)
+      echo "Unsupported macOS arch: $TARGET_ARCH" >&2
+      exit 1
+      ;;
+  esac
+}
+
+append_macos_cmake_arch() {
+  local array_name="$1"
+  if [[ "$TARGET_OS" == "macos" ]]; then
+    local mac_arch
+    mac_arch="$(macos_arch_name)"
+    eval "$array_name+=(\"-DCMAKE_OSX_ARCHITECTURES=$mac_arch\")"
+  fi
+}
+
+append_macos_cflags() {
+  local array_name="$1"
+  if [[ "$TARGET_OS" == "macos" ]]; then
+    local mac_arch
+    mac_arch="$(macos_arch_name)"
+    eval "$array_name+=(\"-arch\" \"$mac_arch\")"
+  fi
 }

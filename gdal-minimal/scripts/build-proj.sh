@@ -1,7 +1,8 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
 source "$SCRIPT_DIR/common.sh"
 
 require_cmd "$CMAKE_BIN"
@@ -27,27 +28,32 @@ mkdir -p "$PROJ_BUILD"
 
 export PATH="$STAGE_DIR/bin:$PATH"
 
-"$CMAKE_BIN" -S "$PROJ_SRC" -B "$PROJ_BUILD" -G "Unix Makefiles" \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_ARCHITECTURES=arm64 \
-  -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-  -DCMAKE_INSTALL_PREFIX="$STAGE_DIR" \
-  -DBUILD_SHARED_LIBS=OFF \
-  -DBUILD_TESTING=OFF \
-  -DBUILD_CCT=OFF \
-  -DBUILD_CS2CS=OFF \
-  -DBUILD_GEOD=OFF \
-  -DBUILD_GIE=OFF \
-  -DBUILD_PROJ=OFF \
-  -DBUILD_PROJINFO=OFF \
-  -DBUILD_PROJSYNC=OFF \
-  -DENABLE_TIFF=OFF \
-  -DENABLE_CURL=OFF \
-  -DEMBED_RESOURCE_FILES=ON \
-  -DUSE_ONLY_EMBEDDED_RESOURCE_FILES=ON \
-  -DSQLITE3_INCLUDE_DIR="$STAGE_DIR/include" \
+cmake_args=(
+  -S "$PROJ_SRC"
+  -B "$PROJ_BUILD"
+  -G "$CMAKE_GENERATOR"
+  -DCMAKE_BUILD_TYPE=Release
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+  -DCMAKE_INSTALL_PREFIX="$STAGE_DIR"
+  -DBUILD_SHARED_LIBS=OFF
+  -DBUILD_TESTING=OFF
+  -DBUILD_CCT=OFF
+  -DBUILD_CS2CS=OFF
+  -DBUILD_GEOD=OFF
+  -DBUILD_GIE=OFF
+  -DBUILD_PROJ=OFF
+  -DBUILD_PROJINFO=OFF
+  -DBUILD_PROJSYNC=OFF
+  -DENABLE_TIFF=OFF
+  -DENABLE_CURL=OFF
+  -DEMBED_RESOURCE_FILES=ON
+  -DUSE_ONLY_EMBEDDED_RESOURCE_FILES=ON
+  -DSQLITE3_INCLUDE_DIR="$STAGE_DIR/include"
   -DSQLITE3_LIBRARY="$STAGE_DIR/lib/libsqlite3.a"
+)
+append_macos_cmake_arch cmake_args
 
+"$CMAKE_BIN" "${cmake_args[@]}"
 "$CMAKE_BIN" --build "$PROJ_BUILD" --config Release -- -j"$JOBS"
 "$CMAKE_BIN" --build "$PROJ_BUILD" --target install --config Release
 

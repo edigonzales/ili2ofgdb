@@ -519,6 +519,10 @@ task openfgdb4jTest(type: Test, dependsOn: [openfgdb4jBuildJava, compileOpenfgdb
 	forkEvery = 1
 	classpath = sourceSets.openfgdb4jTest.runtimeClasspath
 	testClassesDirs = sourceSets.openfgdb4jTest.output.classesDirs
+	include '**/*Test.class'
+	include '**/*Tests.class'
+	include '**/*TestCase.class'
+	exclude '**/ci/**'
 	systemProperty 'openfgdb4j.lib', file('openfgdb4j/build/native/libopenfgdb.dylib').absolutePath
 	environment 'OPENFGDB4J_BACKEND', 'gdal'
 	executable = ofgdbJava
@@ -531,6 +535,10 @@ task openfgdb4jTestAdapter(type: Test, dependsOn: [openfgdb4jBuildJava, compileO
 	forkEvery = 1
 	classpath = sourceSets.openfgdb4jTest.runtimeClasspath
 	testClassesDirs = sourceSets.openfgdb4jTest.output.classesDirs
+	include '**/*Test.class'
+	include '**/*Tests.class'
+	include '**/*TestCase.class'
+	exclude '**/ci/**'
 	systemProperty 'openfgdb4j.lib', file('openfgdb4j/build/native/libopenfgdb.dylib').absolutePath
 	environment 'OPENFGDB4J_BACKEND', 'adapter'
 	executable = ofgdbJava
@@ -543,6 +551,10 @@ task openfgdb4jTestGdalFail(type: Test, dependsOn: [openfgdb4jBuildJava, compile
 	forkEvery = 1
 	classpath = sourceSets.openfgdb4jTest.runtimeClasspath
 	testClassesDirs = sourceSets.openfgdb4jTest.output.classesDirs
+	include '**/*Test.class'
+	include '**/*Tests.class'
+	include '**/*TestCase.class'
+	exclude '**/ci/**'
 	systemProperty 'openfgdb4j.lib', file('openfgdb4j/build/native/libopenfgdb.dylib').absolutePath
 	environment 'OPENFGDB4J_BACKEND', 'gdal'
 	environment 'OPENFGDB4J_GDAL_FORCE_FAIL', '1'
@@ -559,6 +571,10 @@ task openfgdb4jTestInvalidBackend(type: Test, dependsOn: [openfgdb4jBuildJava, c
 	forkEvery = 1
 	classpath = sourceSets.openfgdb4jTest.runtimeClasspath
 	testClassesDirs = sourceSets.openfgdb4jTest.output.classesDirs
+	include '**/*Test.class'
+	include '**/*Tests.class'
+	include '**/*TestCase.class'
+	exclude '**/ci/**'
 	systemProperty 'openfgdb4j.lib', file('openfgdb4j/build/native/libopenfgdb.dylib').absolutePath
 	environment 'OPENFGDB4J_BACKEND', 'invalid'
 	filter {

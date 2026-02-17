@@ -1,18 +1,20 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROJECT_DIR="$ROOT_DIR/openfgdb4j"
 BUILD_CLASSES_DIR="$PROJECT_DIR/build/classes"
 BUILD_JAR_DIR="$PROJECT_DIR/build/java"
-JAVAC_BIN="${JAVAC_BIN:-/Users/stefan/.sdkman/candidates/java/25-tem/bin/javac}"
-JAR_BIN="${JAR_BIN:-$(dirname "$JAVAC_BIN")/jar}"
+JAVAC_BIN="${JAVAC_BIN:-javac}"
+JAR_BIN="${JAR_BIN:-jar}"
 
 rm -rf "$BUILD_CLASSES_DIR"
 mkdir -p "$BUILD_CLASSES_DIR" "$BUILD_JAR_DIR"
 
-typeset -a JAVA_SOURCES
-JAVA_SOURCES=(${(f)"$(find "$PROJECT_DIR/src/main/java" "$PROJECT_DIR/src/generated/java" -name '*.java' -print)"})
+JAVA_SOURCES=()
+while IFS= read -r source_file; do
+  JAVA_SOURCES+=("$source_file")
+done < <(find "$PROJECT_DIR/src/main/java" "$PROJECT_DIR/src/generated/java" -name '*.java' -print)
 
 if [[ ${#JAVA_SOURCES[@]} -eq 0 ]]; then
   echo "No Java sources found"
