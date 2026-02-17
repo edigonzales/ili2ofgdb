@@ -50,6 +50,34 @@ function Read-LockValue([string] $Name) {
   return $line.Matches[0].Groups[1].Value
 }
 
+function Resolve-LockTemplates([string] $Value, [int] $Depth = 0) {
+  if ([string]::IsNullOrEmpty($Value)) {
+    return $Value
+  }
+  if ($Depth -gt 10) {
+    throw "Lockfile template resolution exceeded max depth for value: $Value"
+  }
+  $resolved = $Value
+  $matches = [regex]::Matches($resolved, '\$\{([A-Za-z0-9_]+)\}')
+  if ($matches.Count -eq 0) {
+    return $resolved
+  }
+  foreach ($match in $matches) {
+    $token = $match.Value
+    $key = $match.Groups[1].Value
+    $replacement = Resolve-LockTemplates (Read-LockValue $key) ($Depth + 1)
+    $resolved = $resolved.Replace($token, $replacement)
+  }
+  if ($resolved -match '\$\{([A-Za-z0-9_]+)\}') {
+    return Resolve-LockTemplates $resolved ($Depth + 1)
+  }
+  return $resolved
+}
+
+function Read-LockResolved([string] $Name) {
+  return Resolve-LockTemplates (Read-LockValue $Name)
+}
+
 function Get-ExpectedSha([string] $ArchiveName) {
   $escapedArchive = [regex]::Escape($ArchiveName)
   $pattern = '^([0-9a-fA-F]+)\s+{0}$' -f $escapedArchive
@@ -154,20 +182,20 @@ if ($env:OPENFGDB4J_GDAL_MINIMAL_REBUILD -eq '1') {
   Ensure-Dir (Join-Path $StageDir 'include')
 }
 
-$GdalVersion = Read-LockValue 'GDAL_VERSION'
-$GdalArchive = Read-LockValue 'GDAL_ARCHIVE'
+$GdalVersion = Read-LockResolved 'GDAL_VERSION'
+$GdalArchive = Read-LockResolved 'GDAL_ARCHIVE'
 $GdalUrl = "https://github.com/OSGeo/gdal/archive/refs/tags/$GdalVersion.tar.gz"
-$GdalSrcDirName = Read-LockValue 'GDAL_SRC_DIR'
+$GdalSrcDirName = Read-LockResolved 'GDAL_SRC_DIR'
 
-$ProjVersion = Read-LockValue 'PROJ_VERSION'
-$ProjArchive = Read-LockValue 'PROJ_ARCHIVE'
+$ProjVersion = Read-LockResolved 'PROJ_VERSION'
+$ProjArchive = Read-LockResolved 'PROJ_ARCHIVE'
 $ProjUrl = "https://github.com/OSGeo/PROJ/archive/refs/tags/$ProjVersion.tar.gz"
-$ProjSrcDirName = Read-LockValue 'PROJ_SRC_DIR'
+$ProjSrcDirName = Read-LockResolved 'PROJ_SRC_DIR'
 
-$SqliteArchive = Read-LockValue 'SQLITE_ARCHIVE'
-$SqliteYear = Read-LockValue 'SQLITE_YEAR'
+$SqliteArchive = Read-LockResolved 'SQLITE_ARCHIVE'
+$SqliteYear = Read-LockResolved 'SQLITE_YEAR'
 $SqliteUrl = "https://www.sqlite.org/$SqliteYear/$SqliteArchive"
-$SqliteSrcDirName = Read-LockValue 'SQLITE_SRC_DIR'
+$SqliteSrcDirName = Read-LockResolved 'SQLITE_SRC_DIR'
 
 Download-Archive $GdalUrl $GdalArchive
 Download-Archive $ProjUrl $ProjArchive
