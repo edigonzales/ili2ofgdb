@@ -143,8 +143,19 @@ function Get-VsDevCmdPath {
 
 $VsDevCmd = Get-VsDevCmdPath
 
+function Get-VsTargetArch {
+  if ($TargetArch -eq 'arm64') { return 'arm64' }
+  return 'x64'
+}
+
+function Get-LibMachineArg {
+  if ($TargetArch -eq 'arm64') { return 'ARM64' }
+  return 'X64'
+}
+
 function Invoke-WithVsDevCmd([string] $CommandLine) {
-  $wrapped = "call `"$VsDevCmd`" -no_logo && $CommandLine"
+  $vsTargetArch = Get-VsTargetArch
+  $wrapped = "call `"$VsDevCmd`" -no_logo -host_arch=x64 -arch=$vsTargetArch && $CommandLine"
   cmd.exe /c $wrapped
   if ($LASTEXITCODE -ne 0) {
     throw "Command failed: $CommandLine"
@@ -235,13 +246,14 @@ if (-not (Test-Path -LiteralPath $SqliteLib)) {
   $sqliteSrc = Join-Path $SrcDir $SqliteSrcDirName
   $sqliteBuild = Join-Path $BuildWorkDir 'sqlite'
   Ensure-Dir $sqliteBuild
+  $sqliteMachine = Get-LibMachineArg
   $obj = Join-Path $sqliteBuild 'sqlite3.obj'
   Invoke-WithVsDevCmd "cl /nologo /O2 /MT /c /DSQLITE_THREADSAFE=1 /DSQLITE_OMIT_LOAD_EXTENSION=1 /Fo`"$obj`" `"$sqliteSrc/sqlite3.c`""
-  Invoke-WithVsDevCmd "lib /nologo /OUT:`"$SqliteLib`" `"$obj`""
+  Invoke-WithVsDevCmd "lib /nologo /MACHINE:$sqliteMachine /OUT:`"$SqliteLib`" `"$obj`""
   Invoke-WithVsDevCmd "cl /nologo /O2 /MT /Fe`"$StageDir/bin/sqlite3.exe`" `"$sqliteSrc/shell.c`" `"$sqliteSrc/sqlite3.c`""
   Copy-Item -Force -LiteralPath (Join-Path $sqliteSrc 'sqlite3.h') -Destination (Join-Path $StageDir 'include/sqlite3.h')
   Copy-Item -Force -LiteralPath (Join-Path $sqliteSrc 'sqlite3ext.h') -Destination (Join-Path $StageDir 'include/sqlite3ext.h')
-  Write-Host "Built sqlite static: $SqliteLib"
+  Write-Host "Built sqlite static ($sqliteMachine): $SqliteLib"
 } else {
   Write-Host "sqlite already built: $SqliteLib"
 }
