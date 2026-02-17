@@ -41,7 +41,9 @@ function Ensure-Dir([string] $Path) {
 }
 
 function Read-LockValue([string] $Name) {
-  $line = Select-String -Path $VersionsFile -Pattern "^$Name=\"([^\"]+)\"" | Select-Object -First 1
+  $escapedName = [regex]::Escape($Name)
+  $pattern = '^{0}="([^"]+)"' -f $escapedName
+  $line = Select-String -Path $VersionsFile -Pattern $pattern | Select-Object -First 1
   if (-not $line) {
     throw "Missing $Name in $VersionsFile"
   }
@@ -49,7 +51,9 @@ function Read-LockValue([string] $Name) {
 }
 
 function Get-ExpectedSha([string] $ArchiveName) {
-  $line = Select-String -Path $ShaFile -Pattern "^([0-9a-fA-F]+)\s+$([regex]::Escape($ArchiveName))$" | Select-Object -First 1
+  $escapedArchive = [regex]::Escape($ArchiveName)
+  $pattern = '^([0-9a-fA-F]+)\s+{0}$' -f $escapedArchive
+  $line = Select-String -Path $ShaFile -Pattern $pattern | Select-Object -First 1
   if (-not $line) {
     throw "No SHA256 pinned for $ArchiveName in $ShaFile"
   }
