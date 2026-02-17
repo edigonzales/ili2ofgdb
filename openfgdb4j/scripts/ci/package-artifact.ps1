@@ -70,10 +70,10 @@ $manifestJson = ($manifest | ConvertTo-Json -Depth 3)
 Set-Content -Path (Join-Path $MetaDir 'manifest.json') -Value $manifestJson -Encoding UTF8
 
 $files = @(
-  Join-Path $NativeDir 'openfgdb.dll',
-  Join-Path $JavaDir 'openfgdb4j.jar',
-  Join-Path $IncludeDir 'openfgdb_c_api.h',
-  Join-Path $MetaDir 'manifest.json'
+  (Join-Path -Path $NativeDir -ChildPath 'openfgdb.dll')
+  (Join-Path -Path $JavaDir -ChildPath 'openfgdb4j.jar')
+  (Join-Path -Path $IncludeDir -ChildPath 'openfgdb_c_api.h')
+  (Join-Path -Path $MetaDir -ChildPath 'manifest.json')
 )
 
 $shaLines = @()
