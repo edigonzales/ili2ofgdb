@@ -79,7 +79,7 @@ $files = @(
 $shaLines = @()
 foreach ($file in $files) {
   $hash = (Get-FileHash -Algorithm SHA256 -Path $file).Hash.ToLowerInvariant()
-  $rel = $file.Substring($ArtifactDir.Length).TrimStart('\\', '/') -replace '\\','/'
+  $rel = $file.Substring($ArtifactDir.Length).TrimStart('\', '/') -replace '\\','/'
   $shaLines += "$hash  $rel"
 }
 Set-Content -Path (Join-Path $MetaDir 'sha256sums.txt') -Value ($shaLines -join "`n") -Encoding UTF8
