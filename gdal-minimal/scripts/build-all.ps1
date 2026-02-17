@@ -173,6 +173,11 @@ function Invoke-Cmake([string[]] $CmakeArgs) {
   }
 }
 
+function To-CmakePath([string] $Path) {
+  if ([string]::IsNullOrWhiteSpace($Path)) { return $Path }
+  return $Path.Replace('\', '/')
+}
+
 Ensure-Dir $DownloadsDir
 Ensure-Dir $SrcDir
 Ensure-Dir $BuildWorkDir
@@ -197,6 +202,10 @@ $stageBin = Join-Path $StageDir 'bin'
 if (Test-Path -LiteralPath $stageBin) {
   $env:PATH = "$stageBin;$env:PATH"
 }
+$StageDirCmake = To-CmakePath $StageDir
+$StageIncludeDirCmake = To-CmakePath (Join-Path $StageDir 'include')
+$StageSqliteLibCmake = To-CmakePath (Join-Path $StageDir 'lib/sqlite3.lib')
+$StageProjConfigDirCmake = To-CmakePath (Join-Path $StageDir 'lib/cmake/proj')
 
 $GdalVersion = Read-LockResolved 'GDAL_VERSION'
 $GdalArchive = Read-LockResolved 'GDAL_ARCHIVE'
@@ -253,7 +262,7 @@ if (-not (Test-Path -LiteralPath $ProjLibCandidate1) -and -not (Test-Path -Liter
     '-DCMAKE_BUILD_TYPE=Release',
     '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded',
     '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
-    "-DCMAKE_INSTALL_PREFIX=$StageDir",
+    "-DCMAKE_INSTALL_PREFIX=$StageDirCmake",
     '-DBUILD_SHARED_LIBS=OFF',
     '-DBUILD_TESTING=OFF',
     '-DBUILD_CCT=OFF',
@@ -270,8 +279,8 @@ if (-not (Test-Path -LiteralPath $ProjLibCandidate1) -and -not (Test-Path -Liter
     # With PROJ 9.6.0 this mode excludes Win32 helper code paths in filemanager.cpp
     # and triggers unresolved UTF8/WString helpers during compilation.
     '-DUSE_ONLY_EMBEDDED_RESOURCE_FILES=OFF',
-    "-DSQLITE3_INCLUDE_DIR=$StageDir/include",
-    "-DSQLITE3_LIBRARY=$StageDir/lib/sqlite3.lib"
+    "-DSQLITE3_INCLUDE_DIR=$StageIncludeDirCmake",
+    "-DSQLITE3_LIBRARY=$StageSqliteLibCmake"
   )
   Invoke-Cmake $cmArgs
   $projBuildArgs = @('--build', $projBuild, '--config', 'Release', '--target', 'install', '--verbose')
@@ -303,7 +312,7 @@ if (-not (Test-Path -LiteralPath $GdalLibCandidate1) -and -not (Test-Path -Liter
     '-DCMAKE_BUILD_TYPE=Release',
     '-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded',
     '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
-    "-DCMAKE_INSTALL_PREFIX=$StageDir",
+    "-DCMAKE_INSTALL_PREFIX=$StageDirCmake",
     '-DBUILD_SHARED_LIBS=OFF',
     '-DBUILD_APPS=OFF',
     '-DBUILD_TESTING=OFF',
@@ -319,9 +328,9 @@ if (-not (Test-Path -LiteralPath $GdalLibCandidate1) -and -not (Test-Path -Liter
     '-DGDAL_USE_LIBPNG_INTERNAL=ON',
     '-DGDAL_USE_CURL=OFF',
     '-DGDAL_USE_EXPAT=OFF',
-    "-DPROJ_DIR=$StageDir/lib/cmake/proj",
-    "-DSQLite3_INCLUDE_DIR=$StageDir/include",
-    "-DSQLite3_LIBRARY=$StageDir/lib/sqlite3.lib"
+    "-DPROJ_DIR=$StageProjConfigDirCmake",
+    "-DSQLite3_INCLUDE_DIR=$StageIncludeDirCmake",
+    "-DSQLite3_LIBRARY=$StageSqliteLibCmake"
   )
   Invoke-Cmake $cmArgs
   $gdalBuildArgs = @('--build', $gdalBuild, '--config', 'Release', '--target', 'install', '--verbose')
