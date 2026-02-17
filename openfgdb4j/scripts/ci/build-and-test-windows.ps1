@@ -35,7 +35,7 @@ if ([string]::IsNullOrWhiteSpace($stageRoot)) {
   $stageRoot = Join-Path $RootDir 'gdal-minimal/build/stage'
 }
 
-& $env:CMAKE_BIN -S (Join-Path $ProjectDir 'native') -B $BuildDir -G $env:OPENFGDB4J_CMAKE_GENERATOR -A $cmArch -DCMAKE_BUILD_TYPE=Release "-DOPENFGDB4J_GDAL_MINIMAL_ROOT=$stageRoot"
+& $env:CMAKE_BIN -S (Join-Path $ProjectDir 'native') -B $BuildDir -G $env:OPENFGDB4J_CMAKE_GENERATOR -A $cmArch -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded "-DOPENFGDB4J_GDAL_MINIMAL_ROOT=$stageRoot"
 if ($LASTEXITCODE -ne 0) { throw 'cmake configure failed' }
 & $env:CMAKE_BIN --build $BuildDir --config Release
 if ($LASTEXITCODE -ne 0) { throw 'cmake build failed' }

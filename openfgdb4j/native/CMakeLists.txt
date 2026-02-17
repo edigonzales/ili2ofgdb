@@ -5,6 +5,11 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC AND NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+  # Match gdal-minimal static libs (/MT) to avoid LNK2038 RuntimeLibrary mismatch.
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 set(GDAL_VENDOR_OPENFILEGDB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/gdal_openfilegdb/src/ogr/ogrsf_frmts/openfilegdb")
 set(GDAL_VENDOR_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/gdal_core_minimal/src")
 set(OPENFGDB4J_GDAL_MINIMAL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../gdal-minimal/build/stage" CACHE PATH
