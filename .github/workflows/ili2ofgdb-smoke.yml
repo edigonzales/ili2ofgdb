@@ -1,0 +1,105 @@
+name: ili2ofgdb-smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+jobs:
+  smoke_matrix:
+    name: smoke-${{ matrix.id }}
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: linux-amd64
+            runs_on: ubuntu-24.04
+            runner_kind: unix
+          - id: linux-arm64
+            runs_on: ubuntu-24.04-arm
+            runner_kind: unix
+          - id: macos-amd64
+            runs_on: macos-15-intel
+            runner_kind: unix
+          - id: macos-arm64
+            runs_on: macos-15
+            runner_kind: unix
+          - id: windows-amd64
+            runs_on: windows-2025
+            runner_kind: windows
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 11 (Gradle runtime)
+        id: java11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Setup Java 25 (ili2ofgdb toolchain)
+        id: java25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Run ili2ofgdb smoke (Unix)
+        if: matrix.runner_kind == 'unix'
+        shell: bash
+        env:
+          JAVA_HOME: ${{ steps.java11.outputs.path }}
+          JAVAC_22_BIN: ${{ steps.java25.outputs.path }}/bin/javac
+          JAVA_22_BIN: ${{ steps.java25.outputs.path }}/bin/java
+        run: |
+          ./gradlew --no-daemon -x usrdoc -Dopenfgdb4jVersion=0.1.0-SNAPSHOT ili2ofgdbBindistSmoke
+
+      - name: Run ili2ofgdb smoke (Windows)
+        if: matrix.runner_kind == 'windows'
+        shell: pwsh
+        env:
+          JAVA_HOME: ${{ steps.java11.outputs.path }}
+          JAVAC_22_BIN: ${{ steps.java25.outputs.path }}\bin\javac.exe
+          JAVA_22_BIN: ${{ steps.java25.outputs.path }}\bin\java.exe
+        run: |
+          .\gradlew.bat --no-daemon -x usrdoc -Dopenfgdb4jVersion=0.1.0-SNAPSHOT ili2ofgdbBindistSmoke
+
+  publish_bindist_snapshot:
+    name: publish-ili2ofgdb-bindist
+    needs: smoke_matrix
+    runs-on: ubuntu-24.04
+    if: >
+      needs.smoke_matrix.result == 'success' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 11 (Gradle runtime)
+        id: java11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Setup Java 25 (ili2ofgdb toolchain)
+        id: java25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Publish ili2ofgdb bindist snapshot
+        shell: bash
+        env:
+          JAVA_HOME: ${{ steps.java11.outputs.path }}
+          JAVAC_22_BIN: ${{ steps.java25.outputs.path }}/bin/javac
+          JAVA_22_BIN: ${{ steps.java25.outputs.path }}/bin/java
+          ORG_GRADLE_PROJECT_sogeoSnapshotsUser: ${{ secrets.SOGEO_SNAPSHOTS_USER }}
+          ORG_GRADLE_PROJECT_sogeoSnapshotsPassword: ${{ secrets.SOGEO_SNAPSHOTS_PASSWORD }}
+        run: |
+          ./gradlew --no-daemon -x usrdoc -Dopenfgdb4jVersion=0.1.0-SNAPSHOT publishIli2ofgdbBindistSnapshot

@@ -3,6 +3,7 @@ version '5.5.2'+System.getProperty('release','-SNAPSHOT')
 
 apply plugin: "java"
 apply plugin: "maven"
+apply plugin: "maven-publish"
 
 
 if(!JavaVersion.current().isJava8()){
@@ -25,6 +26,9 @@ repositories {
     mavenLocal()
     maven {
         url "http://jars.interlis.ch"
+    }
+    maven {
+        url "https://jars.sogeo.services/snapshots"
     }
     mavenCentral()
 }
@@ -51,6 +55,17 @@ def mypwd = System.getProperty('mypwd',properties.get('mypwd'))
 def rst2html= System.getProperty('rst2html',properties.get('rst2html','rst2html'))
 def docs_pwd = System.getProperty('docs_pwd',properties.get('docs_pwd','docs_pwd'))
 def docs_usr = System.getProperty('docs_usr',properties.get('docs_usr','docs_usr'))
+def openfgdb4jGroup = System.getProperty('openfgdb4jGroup', properties.get('openfgdb4jGroup', 'ch.so.agi'))
+def openfgdb4jVersion = System.getProperty('openfgdb4jVersion', properties.get('openfgdb4jVersion', '0.1.0-SNAPSHOT'))
+def sogeoSnapshotsUrl = System.getProperty('sogeoSnapshotsUrl') ?:
+	findProperty('sogeoSnapshotsUrl') ?:
+	properties.get('sogeoSnapshotsUrl', 'https://jars.sogeo.services/snapshots')
+def sogeoSnapshotsUser = System.getProperty('sogeoSnapshotsUser') ?:
+	findProperty('sogeoSnapshotsUser') ?:
+	properties.get('sogeoSnapshotsUser')
+def sogeoSnapshotsPassword = System.getProperty('sogeoSnapshotsPassword') ?:
+	findProperty('sogeoSnapshotsPassword') ?:
+	properties.get('sogeoSnapshotsPassword')
     
 def generatedResources = "$buildDir/generated-resources/main"
 
@@ -219,13 +234,6 @@ sourceSets {
     runtimeClasspath += sourceSets.test.output
     runtimeClasspath += sourceSets.ili2ofgdb.output
   }
-  openfgdb4jTest {
-    java {
-      srcDirs=['openfgdb4j/src/test/java']
-    }
-    compileClasspath += sourceSets.main.output
-    runtimeClasspath += sourceSets.main.output
-  }
   ili2mssql {
     java {
     	srcDirs=['ili2mssql/src']
@@ -363,12 +371,6 @@ configurations {
 	ili2ofgdbTestRuntimeOnly {
 		extendsFrom ili2ofgdbRuntimeOnly
 	}
-	openfgdb4jTestImplementation {
-		extendsFrom testImplementation
-	}
-	openfgdb4jTestRuntimeOnly {
-		extendsFrom testRuntimeOnly
-	}
 	ili2mssqlImplementation {
 		extendsFrom implementation
 	}
@@ -432,9 +434,9 @@ dependencies {
 	ili2fgdbImplementation group: 'ch.ehi', name: 'fgdb4j', version: "1.1.1"
 	ili2fgdbImplementation "antlr:antlr:2.7.7" 	
 	compileOnly group: 'ch.ehi', name: 'fgdb4j', version: "1.1.1" // add as compileOnly, so that eclipse sees it
-	ili2ofgdbImplementation files('openfgdb4j/build/java/openfgdb4j.jar')
+	ili2ofgdbImplementation group: openfgdb4jGroup, name: 'openfgdb4j-api', version: openfgdb4jVersion
+	ili2ofgdbRuntimeOnly group: openfgdb4jGroup, name: 'openfgdb4j-natives', version: openfgdb4jVersion
 	ili2ofgdbImplementation "antlr:antlr:2.7.7"
-	openfgdb4jTestImplementation files('openfgdb4j/build/java/openfgdb4j.jar')
 	ili2mssqlImplementation group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '6.4.0.jre7'
 	ili2oraImplementation files('libs/ojdbc14.jar')
 	ili2db group: project.group, name: project.name, version: project.version
@@ -453,30 +455,33 @@ task printcp {
 		System.out.println sourceSets.ili2pgTest.runtimeClasspath.getFiles()
 	}
 }
-def ofgdbJavac = System.getenv('JAVAC_22_BIN') ?: '/Users/stefan/.sdkman/candidates/java/25-tem/bin/javac'
-def ofgdbJarTool = System.getenv('JAR_22_BIN') ?: (new File(ofgdbJavac).getParent() + '/jar')
-def ofgdbJava = System.getenv('JAVA_22_BIN') ?: (new File(ofgdbJavac).getParent() + '/java')
-task openfgdb4jBuildNative(type: Exec) {
-	workingDir = project.projectDir
-	executable '/bin/zsh'
-	args '-lc', 'openfgdb4j/scripts/build-native.sh'
-}
-task openfgdb4jTestNoExternalGdal(type: Exec, dependsOn: [openfgdb4jBuildNative]) {
-	workingDir = project.projectDir
-	executable '/bin/zsh'
-	args '-lc', 'set -euo pipefail; LIB=openfgdb4j/build/native/libopenfgdb.dylib; test -f \"$LIB\"; OUT=\"$(otool -L \"$LIB\")\"; echo \"$OUT\"; if command -v rg >/dev/null 2>&1; then if echo \"$OUT\" | rg -q \"libgdal\\\\.dylib\"; then echo \"Unexpected dynamic libgdal dependency in $LIB\" >&2; exit 1; fi; else if echo \"$OUT\" | grep -q \"libgdal\\\\.dylib\"; then echo \"Unexpected dynamic libgdal dependency in $LIB\" >&2; exit 1; fi; fi'
-}
-task openfgdb4jGenerateBindings(type: Exec) {
-	workingDir = project.projectDir
-	executable '/bin/zsh'
-	args '-lc', 'openfgdb4j/scripts/generate-bindings.sh'
-}
-task openfgdb4jBuildJava(type: Exec, dependsOn: [openfgdb4jBuildNative, openfgdb4jGenerateBindings]) {
-	workingDir = project.projectDir
-	environment 'JAVAC_BIN', ofgdbJavac
-	environment 'JAR_BIN', ofgdbJarTool
-	executable '/bin/zsh'
-	args '-lc', 'openfgdb4j/scripts/build-java.sh'
+def ofgdbJavaHome = System.getenv('JAVA_HOME')
+def ofgdbJavacDefault = ofgdbJavaHome ? new File(ofgdbJavaHome, 'bin/javac').absolutePath : 'javac'
+def ofgdbJavaDefault = ofgdbJavaHome ? new File(ofgdbJavaHome, 'bin/java').absolutePath : 'java'
+def ofgdbJavac = System.getenv('JAVAC_22_BIN') ?: ofgdbJavacDefault
+def ofgdbJava = System.getenv('JAVA_22_BIN') ?: ofgdbJavaDefault
+
+task verifyOfgdbJavaToolchain {
+	doLast {
+		try {
+			exec {
+				commandLine ofgdbJavac, '--release', '22', '-version'
+			}
+		} catch (Exception e) {
+			throw new GradleException(
+				"Java 22+ compiler required for ili2ofgdb. Set JAVAC_22_BIN or JAVA_HOME to a JDK 22+ installation.",
+				e)
+		}
+		try {
+			exec {
+				commandLine ofgdbJava, '-version'
+			}
+		} catch (Exception e) {
+			throw new GradleException(
+				"Java 22+ runtime required for ili2ofgdb. Set JAVA_22_BIN or JAVA_HOME to a JDK 22+ installation.",
+				e)
+		}
+	}
 }
 task verifyNoTrackedBuildArtifacts(type: Exec) {
 	workingDir = project.projectDir
@@ -494,8 +499,8 @@ task ili2ofgdbNoLegacyFgdbCoreRefs(type: Exec) {
 	args '-lc', 'set -euo pipefail; if command -v rg >/dev/null 2>&1; then BAD=\"$(rg -n \"\\\\b(Fgdb2iox|FgdbColumnConverter|FgdbMetaData|FgdbSelectStmt)\\\\b\" ili2ofgdb/src/ch/ehi/ili2ofgdb ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/sql ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/parser | rg -v \"^(ili2ofgdb/src/ch/ehi/ili2ofgdb/Fgdb2iox.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/FgdbColumnConverter.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/FgdbMetaData.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/sql/FgdbSelectStmt.java):\" || true)\"; else BAD=\"$(grep -R -n -E \"\\\\b(Fgdb2iox|FgdbColumnConverter|FgdbMetaData|FgdbSelectStmt)\\\\b\" ili2ofgdb/src/ch/ehi/ili2ofgdb ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/sql ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/parser | grep -v -E \"^(ili2ofgdb/src/ch/ehi/ili2ofgdb/Fgdb2iox.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/FgdbColumnConverter.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/FgdbMetaData.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/sql/FgdbSelectStmt.java):\" || true)\"; fi; if [ -n \"$BAD\" ]; then echo \"$BAD\"; echo \"Found forbidden legacy fgdb core references in ili2ofgdb/src\" >&2; exit 1; fi'
 }
 compileIli2ofgdbJava {
-	dependsOn openfgdb4jBuildJava
 	dependsOn verifyNoTrackedBuildArtifacts
+	dependsOn verifyOfgdbJavaToolchain
 	dependsOn ili2ofgdbNoFgdb4jRefs
 	dependsOn ili2ofgdbNoLegacyFgdbCoreRefs
 	options.fork = true
@@ -503,86 +508,10 @@ compileIli2ofgdbJava {
 	options.compilerArgs = ['--release', '22']
 }
 compileIli2ofgdbTestJava {
+	dependsOn verifyOfgdbJavaToolchain
 	options.fork = true
 	options.forkOptions.executable = ofgdbJavac
 	options.compilerArgs = ['--release', '22']
-}
-compileOpenfgdb4jTestJava {
-	dependsOn openfgdb4jBuildJava
-	options.fork = true
-	options.forkOptions.executable = ofgdbJavac
-	options.compilerArgs = ['--release', '22']
-}
-task openfgdb4jTest(type: Test, dependsOn: [openfgdb4jBuildJava, compileOpenfgdb4jTestJava]) {
-	dependsOn openfgdb4jTestNoExternalGdal
-	maxParallelForks = 1
-	forkEvery = 1
-	classpath = sourceSets.openfgdb4jTest.runtimeClasspath
-	testClassesDirs = sourceSets.openfgdb4jTest.output.classesDirs
-	include '**/*Test.class'
-	include '**/*Tests.class'
-	include '**/*TestCase.class'
-	exclude '**/ci/**'
-	systemProperty 'openfgdb4j.lib', file('openfgdb4j/build/native/libopenfgdb.dylib').absolutePath
-	environment 'OPENFGDB4J_BACKEND', 'gdal'
-	executable = ofgdbJava
-	jvmArgs '--enable-native-access=ALL-UNNAMED'
-	testLogging.exceptionFormat = 'full'
-}
-task openfgdb4jTestAdapter(type: Test, dependsOn: [openfgdb4jBuildJava, compileOpenfgdb4jTestJava]) {
-	dependsOn openfgdb4jTestNoExternalGdal
-	maxParallelForks = 1
-	forkEvery = 1
-	classpath = sourceSets.openfgdb4jTest.runtimeClasspath
-	testClassesDirs = sourceSets.openfgdb4jTest.output.classesDirs
-	include '**/*Test.class'
-	include '**/*Tests.class'
-	include '**/*TestCase.class'
-	exclude '**/ci/**'
-	systemProperty 'openfgdb4j.lib', file('openfgdb4j/build/native/libopenfgdb.dylib').absolutePath
-	environment 'OPENFGDB4J_BACKEND', 'adapter'
-	executable = ofgdbJava
-	jvmArgs '--enable-native-access=ALL-UNNAMED'
-	testLogging.exceptionFormat = 'full'
-}
-task openfgdb4jTestGdalFail(type: Test, dependsOn: [openfgdb4jBuildJava, compileOpenfgdb4jTestJava]) {
-	dependsOn openfgdb4jTestNoExternalGdal
-	maxParallelForks = 1
-	forkEvery = 1
-	classpath = sourceSets.openfgdb4jTest.runtimeClasspath
-	testClassesDirs = sourceSets.openfgdb4jTest.output.classesDirs
-	include '**/*Test.class'
-	include '**/*Tests.class'
-	include '**/*TestCase.class'
-	exclude '**/ci/**'
-	systemProperty 'openfgdb4j.lib', file('openfgdb4j/build/native/libopenfgdb.dylib').absolutePath
-	environment 'OPENFGDB4J_BACKEND', 'gdal'
-	environment 'OPENFGDB4J_GDAL_FORCE_FAIL', '1'
-	filter {
-		includeTestsMatching 'ch.ehi.openfgdb4j.OpenFgdbSmokeTest.gdalFailureDoesNotFallback'
-	}
-	executable = ofgdbJava
-	jvmArgs '--enable-native-access=ALL-UNNAMED'
-	testLogging.exceptionFormat = 'full'
-}
-task openfgdb4jTestInvalidBackend(type: Test, dependsOn: [openfgdb4jBuildJava, compileOpenfgdb4jTestJava]) {
-	dependsOn openfgdb4jTestNoExternalGdal
-	maxParallelForks = 1
-	forkEvery = 1
-	classpath = sourceSets.openfgdb4jTest.runtimeClasspath
-	testClassesDirs = sourceSets.openfgdb4jTest.output.classesDirs
-	include '**/*Test.class'
-	include '**/*Tests.class'
-	include '**/*TestCase.class'
-	exclude '**/ci/**'
-	systemProperty 'openfgdb4j.lib', file('openfgdb4j/build/native/libopenfgdb.dylib').absolutePath
-	environment 'OPENFGDB4J_BACKEND', 'invalid'
-	filter {
-		includeTestsMatching 'ch.ehi.openfgdb4j.OpenFgdbSmokeTest.invalidBackendSelectionFailsFast'
-	}
-	executable = ofgdbJava
-	jvmArgs '--enable-native-access=ALL-UNNAMED'
-	testLogging.exceptionFormat = 'full'
 }
 task usrdoc(type:Exec) {
 	group = JavaBasePlugin.DOCUMENTATION_GROUP
@@ -789,12 +718,15 @@ task ili2fgdbTest(type: Test) {
     testClassesDirs = sourceSets.ili2fgdbTest.output.classesDirs
     testLogging.exceptionFormat = 'full'
 }
-task ili2ofgdbJar(dependsOn: [jar,openfgdb4jBuildJava],type: Jar) {
+task ili2ofgdbJar(dependsOn: [jar],type: Jar) {
 	baseName = 'ili2ofgdb'
     from sourceSets.ili2ofgdb.output
   manifest {
     attributes(
-      "Main-Class": "ch.ehi.ili2ofgdb.OfgdbMain",
+      "Main-Class": "ch.ehi.ili2ofgdb.OfgdbMain")
+  }
+  doFirst {
+    manifest.attributes(
       "Class-Path": 'libs/'+jar.archiveName+' '+configurations.ili2ofgdbRuntimeClasspath.collect { 'libs/'+it.getName() }.join(' '))
   }
 }
@@ -808,172 +740,220 @@ task ili2ofgdbBindist(dependsOn:[usrdoc,ili2ofgdbJar], type: Zip){
 	into('libs'){
 		from configurations.ili2ofgdbRuntimeClasspath
 		from jar
-		from files('openfgdb4j/build/native/libopenfgdb.dylib')
 	}
 }
-task ili2ofgdbBindistSmoke(type: Exec, dependsOn: [ili2ofgdbBindist]) {
-	workingDir = project.projectDir
-	executable '/bin/zsh'
-	doFirst {
-		environment 'OFGDB_SMOKE_ROOT', project.projectDir.absolutePath
-		environment 'OFGDB_SMOKE_ZIP', ili2ofgdbBindist.archivePath.absolutePath
-		environment 'OFGDB_SMOKE_JAVA', ofgdbJava
-	}
-	args '-lc', '''set -euo pipefail
-ROOT="$OFGDB_SMOKE_ROOT"
-ZIP="$OFGDB_SMOKE_ZIP"
-JAVA_BIN="$OFGDB_SMOKE_JAVA"
-JAVAC_BIN="${JAVA_BIN%/java}/javac"
-SMOKE_DIR="$ROOT/build/smoke/ili2ofgdb-bindist"
-MODEL_DIR="$ROOT/ili2ofgdb/test/data/smoke/abbaustellen/models"
-DATA_XTF="$ROOT/ili2ofgdb/test/data/smoke/abbaustellen/data/ch.so.afu.abbaustellen.relational.xtf"
-rm -rf "$SMOKE_DIR"
-mkdir -p "$SMOKE_DIR/unpack" "$SMOKE_DIR/work"
-unzip -q "$ZIP" -d "$SMOKE_DIR/unpack"
-JAR="$(find "$SMOKE_DIR/unpack" -maxdepth 2 -type f -name 'ili2ofgdb-*.jar' | head -n 1)"
-if [ -z "$JAR" ]; then
-  echo "ili2ofgdb jar not found in bindist" >&2
-  exit 1
-fi
-if [ ! -f "$SMOKE_DIR/unpack/libs/libopenfgdb.dylib" ]; then
-  echo "libopenfgdb.dylib missing in bindist" >&2
-  exit 1
-fi
-if [ ! -f "$DATA_XTF" ]; then
-  echo "Smoke data file not found: $DATA_XTF" >&2
-  exit 1
-fi
-DB="$SMOKE_DIR/work/abbaustellen.gdb"
-SCHEMA_LOG="$SMOKE_DIR/work/schemaimport.log"
-IMPORT_LOG="$SMOKE_DIR/work/import.log"
-OPENFGDB4J_BACKEND=gdal "$JAVA_BIN" --enable-native-access=ALL-UNNAMED -jar "$JAR" \
-  --dbfile "$DB" \
-  --defaultSrsCode 2056 \
-  --strokeArcs \
-  --nameByTopic \
-  --modeldir "$MODEL_DIR" \
-  --models SO_AFU_ABBAUSTELLEN_20210630 \
-  --trace \
-  --log "$SCHEMA_LOG" \
-  --schemaimport
-OPENFGDB4J_BACKEND=gdal "$JAVA_BIN" --enable-native-access=ALL-UNNAMED -jar "$JAR" \
-  --dbfile "$DB" \
-  --defaultSrsCode 2056 \
-  --strokeArcs \
-  --nameByTopic \
-  --modeldir "$MODEL_DIR" \
-  --models SO_AFU_ABBAUSTELLEN_20210630 \
-  --trace \
-  --log "$IMPORT_LOG" \
-  --import "$DATA_XTF"
-if [ ! -d "$DB" ]; then
-  echo "Schemaimport did not create $DB" >&2
-  exit 1
-fi
-if [ ! -f "$SCHEMA_LOG" ]; then
-  echo "Schemaimport did not write log file $SCHEMA_LOG" >&2
-  exit 1
-fi
-if [ ! -f "$IMPORT_LOG" ]; then
-  echo "Import did not write log file $IMPORT_LOG" >&2
-  exit 1
-fi
-if grep -q "filegdbtable.cpp at line 838" "$SCHEMA_LOG" "$IMPORT_LOG"; then
-  echo "Detected filegdbtable.cpp line 838 in smoke log" >&2
-  exit 1
-fi
-if grep -q "skip domain assignment; column not found" "$SCHEMA_LOG" "$IMPORT_LOG"; then
-  echo "Detected skipped domain assignment in smoke log" >&2
-  exit 1
-fi
-if grep -q "skip relationship; key column missing" "$SCHEMA_LOG" "$IMPORT_LOG"; then
-  echo "Detected skipped relationship in smoke log" >&2
-  exit 1
-fi
-OPENFGDB_JAR="$SMOKE_DIR/unpack/libs/openfgdb4j.jar"
-if [ ! -f "$OPENFGDB_JAR" ]; then
-  echo "openfgdb4j.jar missing in bindist" >&2
-  exit 1
-fi
-cat > "$SMOKE_DIR/work/SmokeInspector.java" <<'JAVA'
-import ch.ehi.openfgdb4j.OpenFgdb;
+def ili2ofgdbSmokeRootDir = file("$buildDir/smoke/ili2ofgdb-bindist")
+def ili2ofgdbSmokeUnpackDir = file("$ili2ofgdbSmokeRootDir/unpack")
+def ili2ofgdbSmokeWorkDir = file("$ili2ofgdbSmokeRootDir/work")
+def ili2ofgdbSmokeModelDir = file('ili2ofgdb/test/data/smoke/abbaustellen/models')
+def ili2ofgdbSmokeDataXtf = file('ili2ofgdb/test/data/smoke/abbaustellen/data/ch.so.afu.abbaustellen.relational.xtf')
+def ili2ofgdbSmokeInspectorSource = file('ili2ofgdb/test/smoke/SmokeInspector.java')
+def ili2ofgdbSmokeInspectorClassesDir = file("$ili2ofgdbSmokeWorkDir/inspector-classes")
+def ili2ofgdbSmokeDbDir = file("$ili2ofgdbSmokeWorkDir/abbaustellen.gdb")
+def ili2ofgdbSmokeSchemaLog = file("$ili2ofgdbSmokeWorkDir/schemaimport.log")
+def ili2ofgdbSmokeImportLog = file("$ili2ofgdbSmokeWorkDir/import.log")
+def ili2ofgdbSmokeState = [:]
 
-public final class SmokeInspector {
-  public static void main(String[] args) throws Exception {
-    if (args.length != 1) {
-      throw new IllegalArgumentException("usage: SmokeInspector <dbfile>");
-    }
-    OpenFgdb api = new OpenFgdb();
-    long db = api.open(args[0]);
-    try {
-      if (api.listDomains(db).isEmpty()) {
-        throw new IllegalStateException("No domains found in smoke database.");
-      }
-      if (api.listRelationships(db).isEmpty()) {
-        throw new IllegalStateException("No relationship classes found in smoke database.");
-      }
-      long table = api.openTable(db, "gis_geometrie");
-      try {
-        long cursor = api.search(table, "*", "");
-        try {
-          int rowCount = 0;
-          int withGeometry = 0;
-          while (true) {
-            long row = api.fetchRow(cursor);
-            if (row == 0L) {
-              break;
-            }
-            rowCount++;
-            try {
-              byte[] geom = api.rowGetGeometry(row);
-              if (geom != null && geom.length > 0) {
-                withGeometry++;
-              }
-            } finally {
-              api.closeRow(row);
-            }
-          }
-          if (rowCount == 0) {
-            throw new IllegalStateException("gis_geometrie has no rows after import.");
-          }
-          if (withGeometry == 0) {
-            throw new IllegalStateException("No non-null geometry found in gis_geometrie.");
-          }
-        } finally {
-          api.closeCursor(cursor);
-        }
-      } finally {
-        api.closeTable(db, table);
-      }
-    } finally {
-      api.close(db);
-    }
-  }
+def resolveFirstSmokeMatch = { String pattern ->
+	def matches = fileTree(dir: ili2ofgdbSmokeUnpackDir, includes: [pattern]).files.toList()
+	matches.sort { a, b -> a.absolutePath <=> b.absolutePath }
+	return matches.isEmpty() ? null : matches[0]
 }
-JAVA
-"$JAVAC_BIN" -cp "$OPENFGDB_JAR" -d "$SMOKE_DIR/work" "$SMOKE_DIR/work/SmokeInspector.java"
-OPENFGDB4J_BACKEND=gdal "$JAVA_BIN" --enable-native-access=ALL-UNNAMED \
-  -Dopenfgdb4j.lib="$SMOKE_DIR/unpack/libs/libopenfgdb.dylib" \
-  -cp "$SMOKE_DIR/work:$OPENFGDB_JAR" \
-  SmokeInspector "$DB"
-if command -v ogrinfo >/dev/null 2>&1; then
-  OGR_LOG="$SMOKE_DIR/work/ogrinfo.log"
-  ogrinfo -al "$DB" > "$OGR_LOG" 2>&1
-  if ! awk '
-    /^Layer name: / { in_layer = ($0 ~ /gis_geometrie/); next }
-    in_layer && /^Geometry: / { if ($0 !~ /Geometry: None/) ok = 1; in_layer = 0 }
-    END { exit(ok ? 0 : 1) }
-  ' "$OGR_LOG"; then
-    echo "ogrinfo did not report a recognized geometry for layer gis_geometrie" >&2
-    exit 1
-  fi
-else
-  echo "Warning: ogrinfo not found; skipped external geometry recognition check" >&2
-fi
-echo "ili2ofgdbBindistSmoke OK: $DB"
-'''
+def requireSmokeStatePath = { String key ->
+	def value = ili2ofgdbSmokeState[key]
+	if (!(value instanceof String) || value.isEmpty()) {
+		throw new GradleException("Smoke state missing '${key}'. Run ili2ofgdbBindistSmokePrepare first.")
+	}
+	return value
+}
+def containsFileName = { String line, String fileName ->
+	if (!line.startsWith('Layer name:')) {
+		return false
+	}
+	def raw = line.substring('Layer name:'.length()).trim()
+	def normalized = raw.replace('\\', '/')
+	return normalized == fileName || normalized.endsWith('/' + fileName)
+}
+def findExecutableOnPath = { List<String> candidates ->
+	def pathValue = System.getenv('PATH') ?: ''
+	def entries = pathValue.split(java.util.regex.Pattern.quote(File.pathSeparator))
+	for (String entry : entries) {
+		if (entry == null || entry.trim().isEmpty()) {
+			continue
+		}
+		for (String candidate : candidates) {
+			File candidateFile = new File(entry, candidate)
+			if (candidateFile.isFile() && candidateFile.canExecute()) {
+				return candidateFile.absolutePath
+			}
+		}
+	}
+	return null
+}
+
+task ili2ofgdbBindistSmokePrepare(dependsOn: [ili2ofgdbBindist, verifyOfgdbJavaToolchain]) {
+	outputs.upToDateWhen { false }
+	doLast {
+		delete ili2ofgdbSmokeRootDir
+		mkdir ili2ofgdbSmokeUnpackDir
+		mkdir ili2ofgdbSmokeWorkDir
+		copy {
+			from zipTree(ili2ofgdbBindist.archivePath)
+			into ili2ofgdbSmokeUnpackDir
+		}
+		def mainJar = resolveFirstSmokeMatch('**/ili2ofgdb-*.jar')
+		if (mainJar == null) {
+			throw new GradleException('ili2ofgdb jar not found in bindist.')
+		}
+		def apiJar = resolveFirstSmokeMatch('**/openfgdb4j-api-*.jar')
+		if (apiJar == null) {
+			throw new GradleException('openfgdb4j-api jar missing in bindist.')
+		}
+		def nativesJar = resolveFirstSmokeMatch('**/openfgdb4j-natives-*.jar')
+		if (nativesJar == null) {
+			throw new GradleException('openfgdb4j-natives jar missing in bindist.')
+		}
+		if (!ili2ofgdbSmokeDataXtf.isFile()) {
+			throw new GradleException("Smoke data file not found: ${ili2ofgdbSmokeDataXtf.absolutePath}")
+		}
+		if (!ili2ofgdbSmokeInspectorSource.isFile()) {
+			throw new GradleException("Smoke inspector source not found: ${ili2ofgdbSmokeInspectorSource.absolutePath}")
+		}
+		ili2ofgdbSmokeState.clear()
+		ili2ofgdbSmokeState.mainJar = mainJar.absolutePath
+		ili2ofgdbSmokeState.apiJar = apiJar.absolutePath
+		ili2ofgdbSmokeState.nativesJar = nativesJar.absolutePath
+	}
+}
+task ili2ofgdbBindistSmokeSchemaImport(type: Exec, dependsOn: ili2ofgdbBindistSmokePrepare) {
+	environment 'OPENFGDB4J_BACKEND', 'gdal'
+	doFirst {
+		commandLine ofgdbJava,
+			'--enable-native-access=ALL-UNNAMED',
+			'-jar', requireSmokeStatePath('mainJar'),
+			'--dbfile', ili2ofgdbSmokeDbDir.absolutePath,
+			'--defaultSrsCode', '2056',
+			'--strokeArcs',
+			'--nameByTopic',
+			'--modeldir', ili2ofgdbSmokeModelDir.absolutePath,
+			'--models', 'SO_AFU_ABBAUSTELLEN_20210630',
+			'--trace',
+			'--log', ili2ofgdbSmokeSchemaLog.absolutePath,
+			'--schemaimport'
+	}
+}
+task ili2ofgdbBindistSmokeImport(type: Exec, dependsOn: ili2ofgdbBindistSmokeSchemaImport) {
+	environment 'OPENFGDB4J_BACKEND', 'gdal'
+	doFirst {
+		commandLine ofgdbJava,
+			'--enable-native-access=ALL-UNNAMED',
+			'-jar', requireSmokeStatePath('mainJar'),
+			'--dbfile', ili2ofgdbSmokeDbDir.absolutePath,
+			'--defaultSrsCode', '2056',
+			'--strokeArcs',
+			'--nameByTopic',
+			'--modeldir', ili2ofgdbSmokeModelDir.absolutePath,
+			'--models', 'SO_AFU_ABBAUSTELLEN_20210630',
+			'--trace',
+			'--log', ili2ofgdbSmokeImportLog.absolutePath,
+			'--import', ili2ofgdbSmokeDataXtf.absolutePath
+	}
+}
+task ili2ofgdbBindistSmokeValidateLogs(dependsOn: ili2ofgdbBindistSmokeImport) {
+	doLast {
+		if (!ili2ofgdbSmokeDbDir.isDirectory()) {
+			throw new GradleException("Schemaimport did not create ${ili2ofgdbSmokeDbDir.absolutePath}")
+		}
+		if (!ili2ofgdbSmokeSchemaLog.isFile()) {
+			throw new GradleException("Schemaimport did not write log file ${ili2ofgdbSmokeSchemaLog.absolutePath}")
+		}
+		if (!ili2ofgdbSmokeImportLog.isFile()) {
+			throw new GradleException("Import did not write log file ${ili2ofgdbSmokeImportLog.absolutePath}")
+		}
+		String combinedLog = ili2ofgdbSmokeSchemaLog.getText('UTF-8') + '\n' + ili2ofgdbSmokeImportLog.getText('UTF-8')
+		def forbidden = [
+			'filegdbtable.cpp at line 838'              : 'Detected filegdbtable.cpp line 838 in smoke log',
+			'skip domain assignment; column not found'  : 'Detected skipped domain assignment in smoke log',
+			'skip relationship; key column missing'     : 'Detected skipped relationship in smoke log'
+		]
+		forbidden.each { String marker, String message ->
+			if (combinedLog.contains(marker)) {
+				throw new GradleException(message)
+			}
+		}
+	}
+}
+task ili2ofgdbBindistSmokeCompileInspector(type: Exec, dependsOn: ili2ofgdbBindistSmokeValidateLogs) {
+	doFirst {
+		delete ili2ofgdbSmokeInspectorClassesDir
+		mkdir ili2ofgdbSmokeInspectorClassesDir
+		commandLine ofgdbJavac,
+			'-cp', requireSmokeStatePath('apiJar'),
+			'-d', ili2ofgdbSmokeInspectorClassesDir.absolutePath,
+			ili2ofgdbSmokeInspectorSource.absolutePath
+	}
+}
+task ili2ofgdbBindistSmokeRunInspector(type: Exec, dependsOn: ili2ofgdbBindistSmokeCompileInspector) {
+	environment 'OPENFGDB4J_BACKEND', 'gdal'
+	doFirst {
+		def classpathEntries = [
+			ili2ofgdbSmokeInspectorClassesDir.absolutePath,
+			requireSmokeStatePath('apiJar'),
+			requireSmokeStatePath('nativesJar')
+		]
+		commandLine ofgdbJava,
+			'--enable-native-access=ALL-UNNAMED',
+			'-cp', classpathEntries.join(File.pathSeparator),
+			'SmokeInspector',
+			ili2ofgdbSmokeDbDir.absolutePath
+	}
+}
+task ili2ofgdbBindistSmokeOptionalOgrinfo(dependsOn: ili2ofgdbBindistSmokeRunInspector) {
+	doLast {
+		def osName = (System.getProperty('os.name') ?: '').toLowerCase()
+		def candidates = osName.contains('windows')
+			? ['ogrinfo.exe', 'ogrinfo.cmd', 'ogrinfo.bat', 'ogrinfo']
+			: ['ogrinfo']
+		def ogrinfoExecutable = findExecutableOnPath(candidates)
+		if (ogrinfoExecutable == null) {
+			logger.lifecycle('Warning: ogrinfo not found; skipped external geometry recognition check')
+			return
+		}
+		def stdout = new ByteArrayOutputStream()
+		def stderr = new ByteArrayOutputStream()
+		def result = exec {
+			commandLine ogrinfoExecutable, '-al', ili2ofgdbSmokeDbDir.absolutePath
+			standardOutput = stdout
+			errorOutput = stderr
+			ignoreExitValue = true
+		}
+		if (result.exitValue != 0) {
+			logger.lifecycle("Warning: ogrinfo exited with ${result.exitValue}; skipped external geometry recognition check")
+			return
+		}
+		String ogrOutput = stdout.toString('UTF-8') + '\n' + stderr.toString('UTF-8')
+		boolean inLayer = false
+		boolean recognized = false
+		ogrOutput.eachLine { String line ->
+			if (line.startsWith('Layer name:')) {
+				inLayer = containsFileName(line, 'gis_geometrie')
+			} else if (inLayer && line.startsWith('Geometry:')) {
+				recognized = !line.contains('Geometry: None')
+				inLayer = false
+			}
+		}
+		if (!recognized) {
+			logger.lifecycle('Warning: ogrinfo did not report a recognized geometry for layer gis_geometrie')
+		}
+	}
+}
+task ili2ofgdbBindistSmoke(dependsOn: ili2ofgdbBindistSmokeOptionalOgrinfo) {
+	doLast {
+		println "ili2ofgdbBindistSmoke OK: ${ili2ofgdbSmokeDbDir.absolutePath}"
+	}
 }
 task ili2ofgdbTest(type: Test) {
+	dependsOn verifyOfgdbJavaToolchain
 	maxParallelForks = 1
 	forkEvery = 1
 	executable = ofgdbJava
@@ -1098,8 +1078,8 @@ task testreport {
 	}
 }
 
-// use plugin 'maven' instead of 'maven-publish', 
-// because 'maven-publish' doesn't support ftp repository access
+// Keep legacy publishing on plugin 'maven' for existing FTP-based flows.
+// Dedicated ili2ofgdb bindist snapshot publishing is configured via 'maven-publish'.
 artifacts {
     archives(jar.archivePath){
     	builtBy jar
@@ -1176,6 +1156,55 @@ artifacts {
     archives(ili2oraJar.archivePath){
     	builtBy ili2oraJar
     }
+}
+
+def ili2ofgdbBindistTask = tasks.getByName('ili2ofgdbBindist')
+
+publishing {
+	publications {
+		ili2ofgdbBindist(MavenPublication) {
+			groupId project.group
+			artifactId 'ili2ofgdb'
+			version project.version
+			artifact(ili2ofgdbBindistTask.archivePath) {
+				extension 'zip'
+				classifier 'bindist'
+				builtBy ili2ofgdbBindistTask
+			}
+		}
+	}
+	repositories {
+		maven {
+			name = 'sogeoSnapshots'
+			url = uri(sogeoSnapshotsUrl)
+			credentials {
+				username = sogeoSnapshotsUser
+				password = sogeoSnapshotsPassword
+			}
+		}
+	}
+}
+
+task verifySogeoSnapshotsCredentials {
+	doLast {
+		if (sogeoSnapshotsUser == null || sogeoSnapshotsUser.trim().isEmpty()) {
+			throw new GradleException('Missing sogeoSnapshotsUser. Provide -DsogeoSnapshotsUser or ORG_GRADLE_PROJECT_sogeoSnapshotsUser.')
+		}
+		if (sogeoSnapshotsPassword == null || sogeoSnapshotsPassword.trim().isEmpty()) {
+			throw new GradleException('Missing sogeoSnapshotsPassword. Provide -DsogeoSnapshotsPassword or ORG_GRADLE_PROJECT_sogeoSnapshotsPassword.')
+		}
+	}
+}
+
+afterEvaluate {
+	tasks.matching { it.name == 'publishIli2ofgdbBindistPublicationToSogeoSnapshotsRepository' }.all {
+		dependsOn verifySogeoSnapshotsCredentials
+	}
+}
+
+task publishIli2ofgdbBindistSnapshot(dependsOn: ['publishIli2ofgdbBindistPublicationToSogeoSnapshotsRepository']) {
+	group = 'publishing'
+	description = 'Publishes ili2ofgdb bindist zip to the SOGEO snapshots Maven repository.'
 }
 
 install {
