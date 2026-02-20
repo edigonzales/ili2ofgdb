@@ -1,0 +1,441 @@
+2026-02-20 19:25:02.593Z: Info: ili2gpkg-5.5.2-SNAPSHOT-d1888312078549123e15739644ced09b4165260f
+2026-02-20 19:25:02.602Z: Info: ili2c-5.6.8-e6f7ab6dd5cdba29afc9b24866ecb98c057d82b2
+2026-02-20 19:25:02.604Z: Info: iox-ili-1.24.4-8e966a086a72e7e2990a312b1229ee5878fd5994
+2026-02-20 19:25:02.604Z: Info: java.version 25.0.1
+2026-02-20 19:25:02.604Z: Info: user.name <stefan>
+2026-02-20 19:25:02.604Z: Info: maxMemory 4194304 KB
+2026-02-20 19:25:02.605Z: Info: currentTime 2026-02-20 20:25:02
+2026-02-20 19:25:02.609Z: Info: resolvePathMap(): pathmap key <%ILI_FROM_DB> (Main.java:1002)
+2026-02-20 19:25:02.609Z: Info: resolvePathMap(): pathmap key <%XTF_DIR> (Main.java:1002)
+2026-02-20 19:25:02.609Z: Info: resolvePathMap(): pathmap key <%JAR_DIR> (Main.java:1002)
+2026-02-20 19:25:02.609Z: Info: setRepositories(): uri <http://models.interlis.ch/> (IliManager.java:94)
+2026-02-20 19:25:02.611Z: Info: dburl <jdbc:sqlite:DMAV_Bodenbedeckung_V1_1.gpkg>
+2026-02-20 19:25:02.611Z: Info: dbusr <>
+2026-02-20 19:25:02.612Z: Info: databaseProduct <SQLite>
+2026-02-20 19:25:02.612Z: Info: databaseVersion <3.43.0>
+2026-02-20 19:25:02.612Z: Info: driverName <SQLite JDBC>
+2026-02-20 19:25:02.613Z: Info: driverVersion <3.43.0.0>
+2026-02-20 19:25:02.613Z: Info: max active DB statements <0>
+2026-02-20 19:25:02.614Z: Info: compile models...
+2026-02-20 19:25:02.614Z: Info: getModelRepos(): pathmap key <%ILI_FROM_DB> (Main.java:1052)
+2026-02-20 19:25:02.614Z: Info: getModelRepos(): pathmap key <%XTF_DIR> (Main.java:1052)
+2026-02-20 19:25:02.614Z: Info: getModelRepos(): pathmap key <%JAR_DIR> (Main.java:1052)
+2026-02-20 19:25:02.614Z: Info: setRepositories(): uri <http://models.interlis.ch/> (IliManager.java:94)
+2026-02-20 19:25:02.616Z: Info: lookup model <DMAV_Bodenbedeckung_V1_1> in repository <http://models.interlis.ch/>
+2026-02-20 19:25:02.616Z: Info: getIliFiles(): read ilimodels.xml from <http://models.interlis.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:25:02.658Z: Info: getIliSite(): read ilisite.xml from <http://models.interlis.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:25:02.660Z: Info: lookup model <DMAV_Bodenbedeckung_V1_1> in repository <http://models.geo.admin.ch/>
+2026-02-20 19:25:02.660Z: Info: getIliFiles(): read ilimodels.xml from <http://models.geo.admin.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:25:02.738Z: Info: lookup model <GeometryCHLV95_V2> 2.4 in repository <http://models.interlis.ch/>
+2026-02-20 19:25:02.739Z: Info: lookup model <GeometryCHLV95_V2> 2.4 in repository <http://models.geo.admin.ch/>
+2026-02-20 19:25:02.739Z: Info: lookup model <DMAVTYM_Qualitaet_V1_0> 2.4 in repository <http://models.interlis.ch/>
+2026-02-20 19:25:02.739Z: Info: lookup model <DMAVTYM_Qualitaet_V1_0> 2.4 in repository <http://models.geo.admin.ch/>
+2026-02-20 19:25:02.739Z: Info: lookup model <DMAVTYM_Modinfo_V1_0> 2.4 in repository <http://models.interlis.ch/>
+2026-02-20 19:25:02.739Z: Info: lookup model <DMAVTYM_Modinfo_V1_0> 2.4 in repository <http://models.geo.admin.ch/>
+2026-02-20 19:25:02.740Z: Info: lookup model <DMAVTYM_Geometrie_V1_0> 2.4 in repository <http://models.interlis.ch/>
+2026-02-20 19:25:02.740Z: Info: lookup model <DMAVTYM_Geometrie_V1_0> 2.4 in repository <http://models.geo.admin.ch/>
+2026-02-20 19:25:02.740Z: Info: lookup model <DMAVTYM_Grafik_V1_0> 2.4 in repository <http://models.interlis.ch/>
+2026-02-20 19:25:02.740Z: Info: lookup model <DMAVTYM_Grafik_V1_0> 2.4 in repository <http://models.geo.admin.ch/>
+2026-02-20 19:25:02.740Z: Info: lookup model <Units> 2.4 in repository <http://models.interlis.ch/>
+2026-02-20 19:25:02.740Z: Info: lookup model <CoordSys> 2.4 in repository <http://models.interlis.ch/>
+2026-02-20 19:25:02.742Z: Info: fetchFromHttpServer(): fetching <http://models.interlis.ch/refhb24/Units.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:25:02.835Z: Info: fetchFromHttpServer(): fetching <http://models.interlis.ch/refhb24/CoordSys.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:25:02.870Z: Info: fetchFromHttpServer(): fetching <http://models.geo.admin.ch/V_D/DMAVTYM_Modinfo_V1_0.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:25:03.10Z: Info: fetchFromHttpServer(): fetching <http://models.geo.admin.ch/V_D/DMAVTYM_Geometrie_V1_0.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:25:03.84Z: Info: fetchFromHttpServer(): fetching <http://models.geo.admin.ch/V_D/DMAVTYM_Qualitaet_V1_0.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:25:03.175Z: Info: fetchFromHttpServer(): fetching <http://models.geo.admin.ch/CH/CHBase_Part1_GEOMETRY_V2.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:25:03.254Z: Info: fetchFromHttpServer(): fetching <http://models.geo.admin.ch/V_D/DMAVTYM_Grafik_V1_0.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:25:03.329Z: Info: fetchFromHttpServer(): fetching <http://models.geo.admin.ch/V_D/DMAV_Bodenbedeckung_V1_1.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:25:03.408Z: Info: ilifile </Users/stefan/.ilicache/models.interlis.ch/refhb24/Units.ili>
+2026-02-20 19:25:03.408Z: Info: ilifile </Users/stefan/.ilicache/models.interlis.ch/refhb24/CoordSys.ili>
+2026-02-20 19:25:03.409Z: Info: ilifile </Users/stefan/.ilicache/models.geo.admin.ch/V_D/DMAVTYM_Modinfo_V1_0.ili>
+2026-02-20 19:25:03.409Z: Info: ilifile </Users/stefan/.ilicache/models.geo.admin.ch/V_D/DMAVTYM_Geometrie_V1_0.ili>
+2026-02-20 19:25:03.409Z: Info: ilifile </Users/stefan/.ilicache/models.geo.admin.ch/V_D/DMAVTYM_Qualitaet_V1_0.ili>
+2026-02-20 19:25:03.410Z: Info: ilifile </Users/stefan/.ilicache/models.geo.admin.ch/CH/CHBase_Part1_GEOMETRY_V2.ili>
+2026-02-20 19:25:03.410Z: Info: ilifile </Users/stefan/.ilicache/models.geo.admin.ch/V_D/DMAVTYM_Grafik_V1_0.ili>
+2026-02-20 19:25:03.410Z: Info: ilifile </Users/stefan/.ilicache/models.geo.admin.ch/V_D/DMAV_Bodenbedeckung_V1_1.ili>
+2026-02-20 19:25:03.527Z: Info: doSmart1(): viewable DMAVTYM_Grafik_V1_0.Textposition newClass, textposition (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.527Z: Info: doSmart1(): viewable DMAVTYM_Grafik_V1_0.Symbolposition newClass, symbolposition (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.527Z: Info: doSmart1(): viewable DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.BBNachfuehrung newClass, bbnachfuehrung (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.527Z: Info: doSmart1(): viewable DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Objektnummer newClass, objektnummer (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.527Z: Info: doSmart1(): viewable DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Objektname newClass, objektname (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.528Z: Info: doSmart1(): viewable DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Bodenbedeckung newClass, bodenbedeckung (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.528Z: Info: doSmart1(): viewable DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Entstehung_Bodenbedeckung embedded, entstehung_bodenbedeckung (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.528Z: Info: doSmart1(): viewable DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Bodenbedeckung_Gueltig newClass, bodenbedeckung_gueltig (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.528Z: Info: doSmart1(): viewable DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Messpunkt newClass, messpunkt (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.528Z: Info: doSmart1(): viewable DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Entstehung_Messpunkt embedded, entstehung_messpunkt (Viewable2TableMapper.java:268)
+2026-02-20 19:25:03.533Z: Info: create table structure, if not existing...
+2026-02-20 19:25:03.536Z: Info: generateViewable(): wrapper of viewable STRUCTURE DMAVTYM_Grafik_V1_0.Textposition (TransferFromIli.java:260)
+2026-02-20 19:25:03.537Z: Info: generateViewable(): wrapper of viewable STRUCTURE DMAVTYM_Grafik_V1_0.Symbolposition (TransferFromIli.java:260)
+2026-02-20 19:25:03.537Z: Info: generateViewable(): wrapper of viewable CLASS DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.BBNachfuehrung (TransferFromIli.java:260)
+2026-02-20 19:25:03.537Z: Info: generateViewable(): wrapper of viewable STRUCTURE DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Objektnummer (TransferFromIli.java:260)
+2026-02-20 19:25:03.537Z: Info: generateViewable(): wrapper of viewable STRUCTURE DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Objektname (TransferFromIli.java:260)
+2026-02-20 19:25:03.537Z: Info: generateViewable(): wrapper of viewable CLASS DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Bodenbedeckung (TransferFromIli.java:260)
+2026-02-20 19:25:03.537Z: Info: generateViewable(): wrapper of viewable CLASS DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Messpunkt (TransferFromIli.java:260)
+2026-02-20 19:25:03.537Z: Info: generateViewable(): wrapper of viewable STRUCTURE DMAVTYM_Grafik_V1_0.Textposition (TransferFromIli.java:260)
+2026-02-20 19:25:03.540Z: Info: generateViewable(): wrapper of viewable STRUCTURE DMAVTYM_Grafik_V1_0.Symbolposition (TransferFromIli.java:260)
+2026-02-20 19:25:03.541Z: Info: generateViewable(): wrapper of viewable CLASS DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.BBNachfuehrung (TransferFromIli.java:260)
+2026-02-20 19:25:03.544Z: Info: generateViewable(): wrapper of viewable STRUCTURE DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Objektnummer (TransferFromIli.java:260)
+2026-02-20 19:25:03.545Z: Info: generateViewable(): wrapper of viewable STRUCTURE DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Objektname (TransferFromIli.java:260)
+2026-02-20 19:25:03.545Z: Info: generateViewable(): wrapper of viewable CLASS DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Bodenbedeckung (TransferFromIli.java:260)
+2026-02-20 19:25:03.546Z: Info: generateViewable(): wrapper of viewable CLASS DMAV_Bodenbedeckung_V1_1.Bodenbedeckung.Messpunkt (TransferFromIli.java:260)
+2026-02-20 19:25:03.547Z: Info: finishTable(): CREATE TABLE textposition (
+  T_Id INTEGER NOT NULL PRIMARY KEY
+  ,T_basket INTEGER NOT NULL CONSTRAINT textposition_T_basket_fkey REFERENCES T_ILI2DB_BASKET DEFERRABLE INITIALLY DEFERRED
+  ,T_datasetname TEXT(200) NOT NULL
+  ,T_Ili_Tid TEXT(200) NULL
+  ,T_Seq INTEGER NULL
+  ,aposition POINT NOT NULL
+  ,orientierung DOUBLE NULL CONSTRAINT textposition_orientierung_check CHECK( orientierung BETWEEN 0.0 AND 399.9)
+  ,darstellungin TEXT(255) NULL
+  ,darstellungin_txt TEXT(255) NULL
+  ,textgroesse TEXT(255) NULL
+  ,textgroesse_txt TEXT(255) NULL
+  ,hreferenzpunkt TEXT(255) NULL
+  ,hreferenzpunkt_txt TEXT(255) NULL
+  ,vreferenzpunkt TEXT(255) NULL
+  ,vreferenzpunkt_txt TEXT(255) NULL
+  ,T_LastChange DATETIME NOT NULL
+  ,T_CreateDate DATETIME NOT NULL
+  ,T_User TEXT(40) NOT NULL
+  ,objektnummer_textposition INTEGER NULL CONSTRAINT textposition_objektnummer_textposition_fkey REFERENCES objektnummer DEFERRABLE INITIALLY DEFERRED
+  ,objektname_textposition INTEGER NULL CONSTRAINT textposition_objektname_textposition_fkey REFERENCES objektname DEFERRABLE INITIALLY DEFERRED
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.548Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change,min_x,min_y,max_x,max_y,srs_id)VALUES ('textposition','features','textposition',null,'2026-02-20T20:25:03.547Z',2460000.0,1045000.0,2870000.0,1310000.0,(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056)) (GeneratorGeoPackage.java:344)
+2026-02-20 19:25:03.548Z: Info: visit1TableEnd(): INSERT INTO gpkg_geometry_columns (table_name,column_name,geometry_type_name,srs_id,z,m)VALUES ('textposition','aposition' ,'POINT',(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056),0,0) (GeneratorGeoPackage.java:347)
+2026-02-20 19:25:03.548Z: Info: visit1TableEnd(): CREATE INDEX textposition_t_basket_idx ON textposition ( t_basket ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.548Z: Info: visit1TableEnd(): CREATE INDEX textposition_t_datasetname_idx ON textposition ( t_datasetname ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.548Z: Info: visit1TableEnd(): CREATE INDEX textposition_objektnummer_textposition_idx ON textposition ( objektnummer_textposition ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.548Z: Info: visit1TableEnd(): CREATE INDEX textposition_objektname_textposition_idx ON textposition ( objektname_textposition ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.549Z: Info: finishTable(): CREATE TABLE textposition_hinweisstrich (
+  T_Id INTEGER NOT NULL PRIMARY KEY CONSTRAINT textposition_hinweisstrich_T_Id_fkey REFERENCES textposition DEFERRABLE INITIALLY DEFERRED
+  ,T_basket INTEGER NOT NULL CONSTRAINT textposition_hinweisstrich_T_basket_fkey REFERENCES T_ILI2DB_BASKET DEFERRABLE INITIALLY DEFERRED
+  ,T_datasetname TEXT(200) NOT NULL
+  ,hinweisstrich COMPOUNDCURVE NULL
+  ,T_LastChange DATETIME NOT NULL
+  ,T_CreateDate DATETIME NOT NULL
+  ,T_User TEXT(40) NOT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.549Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change,min_x,min_y,max_x,max_y,srs_id)VALUES ('textposition_hinweisstrich','features','textposition_hinweisstrich',null,'2026-02-20T20:25:03.547Z',2460000.0,1045000.0,2870000.0,1310000.0,(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056)) (GeneratorGeoPackage.java:344)
+2026-02-20 19:25:03.549Z: Info: visit1TableEnd(): INSERT INTO gpkg_geometry_columns (table_name,column_name,geometry_type_name,srs_id,z,m)VALUES ('textposition_hinweisstrich','hinweisstrich' ,'COMPOUNDCURVE',(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056),0,0) (GeneratorGeoPackage.java:347)
+2026-02-20 19:25:03.549Z: Info: visit1TableEnd(): CREATE INDEX textposition_hinweisstrich_t_basket_idx ON textposition_hinweisstrich ( t_basket ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.549Z: Info: visit1TableEnd(): CREATE INDEX textposition_hinweisstrich_t_datasetname_idx ON textposition_hinweisstrich ( t_datasetname ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.550Z: Info: finishTable(): CREATE TABLE symbolposition (
+  T_Id INTEGER NOT NULL PRIMARY KEY
+  ,T_basket INTEGER NOT NULL CONSTRAINT symbolposition_T_basket_fkey REFERENCES T_ILI2DB_BASKET DEFERRABLE INITIALLY DEFERRED
+  ,T_datasetname TEXT(200) NOT NULL
+  ,T_Ili_Tid TEXT(200) NULL
+  ,T_Seq INTEGER NULL
+  ,aposition POINT NOT NULL
+  ,orientierung DOUBLE NULL CONSTRAINT symbolposition_orientierung_check CHECK( orientierung BETWEEN 0.0 AND 399.9)
+  ,darstellungin TEXT(255) NULL
+  ,darstellungin_txt TEXT(255) NULL
+  ,T_LastChange DATETIME NOT NULL
+  ,T_CreateDate DATETIME NOT NULL
+  ,T_User TEXT(40) NOT NULL
+  ,bodenbedeckung_symbolposition INTEGER NULL CONSTRAINT symbolposition_bodenbedeckung_symblpstion_fkey REFERENCES bodenbedeckung DEFERRABLE INITIALLY DEFERRED
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.550Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change,min_x,min_y,max_x,max_y,srs_id)VALUES ('symbolposition','features','symbolposition',null,'2026-02-20T20:25:03.547Z',2460000.0,1045000.0,2870000.0,1310000.0,(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056)) (GeneratorGeoPackage.java:344)
+2026-02-20 19:25:03.550Z: Info: visit1TableEnd(): INSERT INTO gpkg_geometry_columns (table_name,column_name,geometry_type_name,srs_id,z,m)VALUES ('symbolposition','aposition' ,'POINT',(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056),0,0) (GeneratorGeoPackage.java:347)
+2026-02-20 19:25:03.550Z: Info: visit1TableEnd(): CREATE INDEX symbolposition_t_basket_idx ON symbolposition ( t_basket ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.550Z: Info: visit1TableEnd(): CREATE INDEX symbolposition_t_datasetname_idx ON symbolposition ( t_datasetname ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.550Z: Info: visit1TableEnd(): CREATE INDEX symbolposition_bodenbedeckung_symblpstion_idx ON symbolposition ( bodenbedeckung_symbolposition ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.551Z: Info: finishTable(): CREATE TABLE bbnachfuehrung (
+  T_Id INTEGER NOT NULL PRIMARY KEY
+  ,T_basket INTEGER NOT NULL CONSTRAINT bbnachfuehrung_T_basket_fkey REFERENCES T_ILI2DB_BASKET DEFERRABLE INITIALLY DEFERRED
+  ,T_datasetname TEXT(200) NOT NULL
+  ,T_Ili_Tid TEXT(36) NULL
+  ,nbident TEXT(12) NOT NULL
+  ,identifikator TEXT(12) NOT NULL
+  ,beschreibung TEXT(60) NOT NULL
+  ,perimeter CURVEPOLYGON NULL
+  ,gueltigereintrag DATETIME NOT NULL
+  ,T_LastChange DATETIME NOT NULL
+  ,T_CreateDate DATETIME NOT NULL
+  ,T_User TEXT(40) NOT NULL
+  ,CONSTRAINT bbnachfuehrung_identifikator_nbident_key UNIQUE (identifikator,nbident)
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.551Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change,min_x,min_y,max_x,max_y,srs_id)VALUES ('bbnachfuehrung','features','bbnachfuehrung',null,'2026-02-20T20:25:03.547Z',2460000.0,1045000.0,2870000.0,1310000.0,(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056)) (GeneratorGeoPackage.java:344)
+2026-02-20 19:25:03.551Z: Info: visit1TableEnd(): INSERT INTO gpkg_geometry_columns (table_name,column_name,geometry_type_name,srs_id,z,m)VALUES ('bbnachfuehrung','perimeter' ,'CURVEPOLYGON',(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056),0,0) (GeneratorGeoPackage.java:347)
+2026-02-20 19:25:03.551Z: Info: visit1TableEnd(): CREATE INDEX bbnachfuehrung_t_basket_idx ON bbnachfuehrung ( t_basket ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.551Z: Info: visit1TableEnd(): CREATE INDEX bbnachfuehrung_t_datasetname_idx ON bbnachfuehrung ( t_datasetname ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.551Z: Info: finishTable(): CREATE TABLE objektnummer (
+  T_Id INTEGER NOT NULL PRIMARY KEY
+  ,T_basket INTEGER NOT NULL CONSTRAINT objektnummer_T_basket_fkey REFERENCES T_ILI2DB_BASKET DEFERRABLE INITIALLY DEFERRED
+  ,T_datasetname TEXT(200) NOT NULL
+  ,T_Ili_Tid TEXT(36) NULL
+  ,T_Seq INTEGER NULL
+  ,nummer TEXT(12) NOT NULL
+  ,T_LastChange DATETIME NOT NULL
+  ,T_CreateDate DATETIME NOT NULL
+  ,T_User TEXT(40) NOT NULL
+  ,bodenbedeckung_objektnummer INTEGER NULL CONSTRAINT objektnummer_bodenbedeckung_objektnmmer_fkey REFERENCES bodenbedeckung DEFERRABLE INITIALLY DEFERRED
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.551Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('objektnummer','attributes','objektnummer',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.552Z: Info: visit1TableEnd(): CREATE INDEX objektnummer_t_basket_idx ON objektnummer ( t_basket ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.552Z: Info: visit1TableEnd(): CREATE INDEX objektnummer_t_datasetname_idx ON objektnummer ( t_datasetname ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.552Z: Info: visit1TableEnd(): CREATE INDEX objektnummer_bodenbedeckung_objektnmmer_idx ON objektnummer ( bodenbedeckung_objektnummer ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.552Z: Info: finishTable(): CREATE TABLE objektname (
+  T_Id INTEGER NOT NULL PRIMARY KEY
+  ,T_basket INTEGER NOT NULL CONSTRAINT objektname_T_basket_fkey REFERENCES T_ILI2DB_BASKET DEFERRABLE INITIALLY DEFERRED
+  ,T_datasetname TEXT(200) NOT NULL
+  ,T_Ili_Tid TEXT(36) NULL
+  ,T_Seq INTEGER NULL
+  ,aname TEXT(60) NOT NULL
+  ,T_LastChange DATETIME NOT NULL
+  ,T_CreateDate DATETIME NOT NULL
+  ,T_User TEXT(40) NOT NULL
+  ,bodenbedeckung_objektname INTEGER NULL CONSTRAINT objektname_bodenbedeckung_objektname_fkey REFERENCES bodenbedeckung DEFERRABLE INITIALLY DEFERRED
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.552Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('objektname','attributes','objektname',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.552Z: Info: visit1TableEnd(): CREATE INDEX objektname_t_basket_idx ON objektname ( t_basket ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.552Z: Info: visit1TableEnd(): CREATE INDEX objektname_t_datasetname_idx ON objektname ( t_datasetname ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.552Z: Info: visit1TableEnd(): CREATE INDEX objektname_bodenbedeckung_objektname_idx ON objektname ( bodenbedeckung_objektname ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.553Z: Info: finishTable(): CREATE TABLE bodenbedeckung (
+  T_Id INTEGER NOT NULL PRIMARY KEY
+  ,T_basket INTEGER NOT NULL CONSTRAINT bodenbedeckung_T_basket_fkey REFERENCES T_ILI2DB_BASKET DEFERRABLE INITIALLY DEFERRED
+  ,T_datasetname TEXT(200) NOT NULL
+  ,T_Ili_Tid TEXT(36) NULL
+  ,geometrie CURVEPOLYGON NOT NULL
+  ,qualitaetsstandard TEXT(255) NOT NULL
+  ,qualitaetsstandard_txt TEXT(255) NOT NULL
+  ,bodenbedeckungsart TEXT(255) NULL
+  ,bodenbedeckungsart_txt TEXT(255) NULL
+  ,fiktiv BOOLEAN NOT NULL
+  ,fiktiv_txt TEXT(255) NOT NULL
+  ,objektstatus TEXT(255) NOT NULL
+  ,objektstatus_txt TEXT(255) NOT NULL
+  ,egid INTEGER NULL CONSTRAINT bodenbedeckung_egid_check CHECK( egid BETWEEN 1 AND 900000000)
+  ,entstehung INTEGER NOT NULL CONSTRAINT bodenbedeckung_entstehung_fkey REFERENCES bbnachfuehrung DEFERRABLE INITIALLY DEFERRED
+  ,T_LastChange DATETIME NOT NULL
+  ,T_CreateDate DATETIME NOT NULL
+  ,T_User TEXT(40) NOT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.553Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change,min_x,min_y,max_x,max_y,srs_id)VALUES ('bodenbedeckung','features','bodenbedeckung',null,'2026-02-20T20:25:03.547Z',2460000.0,1045000.0,2870000.0,1310000.0,(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056)) (GeneratorGeoPackage.java:344)
+2026-02-20 19:25:03.553Z: Info: visit1TableEnd(): INSERT INTO gpkg_geometry_columns (table_name,column_name,geometry_type_name,srs_id,z,m)VALUES ('bodenbedeckung','geometrie' ,'CURVEPOLYGON',(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056),0,0) (GeneratorGeoPackage.java:347)
+2026-02-20 19:25:03.553Z: Info: visit1TableEnd(): CREATE INDEX bodenbedeckung_t_basket_idx ON bodenbedeckung ( t_basket ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.553Z: Info: visit1TableEnd(): CREATE INDEX bodenbedeckung_t_datasetname_idx ON bodenbedeckung ( t_datasetname ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.553Z: Info: visit1TableEnd(): CREATE INDEX bodenbedeckung_entstehung_idx ON bodenbedeckung ( entstehung ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.554Z: Info: finishTable(): CREATE TABLE messpunkt (
+  T_Id INTEGER NOT NULL PRIMARY KEY
+  ,T_basket INTEGER NOT NULL CONSTRAINT messpunkt_T_basket_fkey REFERENCES T_ILI2DB_BASKET DEFERRABLE INITIALLY DEFERRED
+  ,T_datasetname TEXT(200) NOT NULL
+  ,T_Ili_Tid TEXT(36) NULL
+  ,nummer TEXT(12) NULL
+  ,geometrie POINT NOT NULL
+  ,hoehengeometrie DOUBLE NULL CONSTRAINT messpunkt_hoehengeometrie_check CHECK( hoehengeometrie BETWEEN -200.0 AND 5000.0)
+  ,lagegenauigkeit DOUBLE NOT NULL CONSTRAINT messpunkt_lagegenauigkeit_check CHECK( lagegenauigkeit BETWEEN 0.001 AND 7.0)
+  ,istlagezuverlaessig BOOLEAN NOT NULL
+  ,istlagezuverlaessig_txt TEXT(255) NOT NULL
+  ,hoehengenauigkeit DOUBLE NULL CONSTRAINT messpunkt_hoehengenauigkeit_check CHECK( hoehengenauigkeit BETWEEN 0.001 AND 7.0)
+  ,isthoehenzuverlaessig BOOLEAN NULL
+  ,isthoehenzuverlaessig_txt TEXT(255) NULL
+  ,istexaktdefiniert BOOLEAN NOT NULL
+  ,istexaktdefiniert_txt TEXT(255) NOT NULL
+  ,entstehung INTEGER NULL CONSTRAINT messpunkt_entstehung_fkey REFERENCES bbnachfuehrung DEFERRABLE INITIALLY DEFERRED
+  ,T_LastChange DATETIME NOT NULL
+  ,T_CreateDate DATETIME NOT NULL
+  ,T_User TEXT(40) NOT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.554Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change,min_x,min_y,max_x,max_y,srs_id)VALUES ('messpunkt','features','messpunkt',null,'2026-02-20T20:25:03.547Z',2460000.0,1045000.0,2870000.0,1310000.0,(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056)) (GeneratorGeoPackage.java:344)
+2026-02-20 19:25:03.554Z: Info: visit1TableEnd(): INSERT INTO gpkg_geometry_columns (table_name,column_name,geometry_type_name,srs_id,z,m)VALUES ('messpunkt','geometrie' ,'POINT',(SELECT srs_id FROM gpkg_spatial_ref_sys WHERE organization='EPSG' AND organization_coordsys_id=2056),0,0) (GeneratorGeoPackage.java:347)
+2026-02-20 19:25:03.554Z: Info: visit1TableEnd(): CREATE INDEX messpunkt_t_basket_idx ON messpunkt ( t_basket ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.554Z: Info: visit1TableEnd(): CREATE INDEX messpunkt_t_datasetname_idx ON messpunkt ( t_datasetname ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.554Z: Info: visit1TableEnd(): CREATE INDEX messpunkt_entstehung_idx ON messpunkt ( entstehung ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.555Z: Info: finishTable(): CREATE TABLE T_ILI2DB_BASKET (
+  T_Id INTEGER NOT NULL PRIMARY KEY
+  ,dataset INTEGER NULL CONSTRAINT T_ILI2DB_BASKET_dataset_fkey REFERENCES T_ILI2DB_DATASET DEFERRABLE INITIALLY DEFERRED
+  ,topic TEXT(200) NOT NULL
+  ,T_Ili_Tid TEXT(200) NULL
+  ,attachmentKey TEXT(200) NOT NULL
+  ,domains TEXT(1024) NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.555Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_BASKET','attributes','T_ILI2DB_BASKET',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.555Z: Info: visit1TableEnd(): CREATE INDEX T_ILI2DB_BASKET_dataset_idx ON t_ili2db_basket ( dataset ) (GeneratorGeoPackage.java:508)
+2026-02-20 19:25:03.555Z: Info: finishTable(): CREATE TABLE T_ILI2DB_DATASET (
+  T_Id INTEGER NOT NULL PRIMARY KEY
+  ,datasetName TEXT(200) NULL
+  ,CONSTRAINT T_ILI2DB_DATASET_datasetName_key UNIQUE (datasetName)
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.555Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_DATASET','attributes','T_ILI2DB_DATASET',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.555Z: Info: finishTable(): CREATE TABLE T_ILI2DB_INHERITANCE (
+  thisClass TEXT(1024) NOT NULL PRIMARY KEY
+  ,baseClass TEXT(1024) NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.556Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_INHERITANCE','attributes','T_ILI2DB_INHERITANCE',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.556Z: Info: finishTable(): CREATE TABLE T_ILI2DB_SETTINGS (
+  tag TEXT(60) NOT NULL PRIMARY KEY
+  ,setting TEXT(8000) NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.556Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_SETTINGS','attributes','T_ILI2DB_SETTINGS',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.556Z: Info: finishTable(): CREATE TABLE T_ILI2DB_TRAFO (
+  iliname TEXT(1024) NOT NULL
+  ,tag TEXT(1024) NOT NULL
+  ,setting TEXT(1024) NOT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.556Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_TRAFO','attributes','T_ILI2DB_TRAFO',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.556Z: Info: finishTable(): CREATE TABLE T_ILI2DB_MODEL (
+  filename TEXT(250) NOT NULL
+  ,iliversion TEXT(3) NOT NULL
+  ,modelName TEXT NOT NULL
+  ,content TEXT NOT NULL
+  ,importDate DATETIME NOT NULL
+  ,CONSTRAINT T_ILI2DB_MODEL_iliversion_modelName_key UNIQUE (iliversion,modelName)
+  ,PRIMARY KEY (iliversion,modelName)
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.557Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_MODEL','attributes','T_ILI2DB_MODEL',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.557Z: Info: finishTable(): CREATE TABLE valignment (
+  itfCode INTEGER NOT NULL PRIMARY KEY
+  ,iliCode TEXT(1024) NOT NULL
+  ,seq INTEGER NULL
+  ,inactive BOOLEAN NOT NULL
+  ,dispName TEXT(250) NOT NULL
+  ,description TEXT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.557Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('valignment','attributes','valignment',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.557Z: Info: finishTable(): CREATE TABLE darstellungin (
+  itfCode INTEGER NOT NULL PRIMARY KEY
+  ,iliCode TEXT(1024) NOT NULL
+  ,seq INTEGER NULL
+  ,inactive BOOLEAN NOT NULL
+  ,dispName TEXT(250) NOT NULL
+  ,description TEXT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.557Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('darstellungin','attributes','darstellungin',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.558Z: Info: finishTable(): CREATE TABLE halignment (
+  itfCode INTEGER NOT NULL PRIMARY KEY
+  ,iliCode TEXT(1024) NOT NULL
+  ,seq INTEGER NULL
+  ,inactive BOOLEAN NOT NULL
+  ,dispName TEXT(250) NOT NULL
+  ,description TEXT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.558Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('halignment','attributes','halignment',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.558Z: Info: finishTable(): CREATE TABLE objektstatus (
+  itfCode INTEGER NOT NULL PRIMARY KEY
+  ,iliCode TEXT(1024) NOT NULL
+  ,seq INTEGER NULL
+  ,inactive BOOLEAN NOT NULL
+  ,dispName TEXT(250) NOT NULL
+  ,description TEXT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.558Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('objektstatus','attributes','objektstatus',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.558Z: Info: finishTable(): CREATE TABLE qualitaetsstandard (
+  itfCode INTEGER NOT NULL PRIMARY KEY
+  ,iliCode TEXT(1024) NOT NULL
+  ,seq INTEGER NULL
+  ,inactive BOOLEAN NOT NULL
+  ,dispName TEXT(250) NOT NULL
+  ,description TEXT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.559Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('qualitaetsstandard','attributes','qualitaetsstandard',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.559Z: Info: finishTable(): CREATE TABLE schriftgroesse (
+  itfCode INTEGER NOT NULL PRIMARY KEY
+  ,iliCode TEXT(1024) NOT NULL
+  ,seq INTEGER NULL
+  ,inactive BOOLEAN NOT NULL
+  ,dispName TEXT(250) NOT NULL
+  ,description TEXT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.559Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('schriftgroesse','attributes','schriftgroesse',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.559Z: Info: finishTable(): CREATE TABLE aboolean (
+  itfCode INTEGER NOT NULL PRIMARY KEY
+  ,iliCode TEXT(1024) NOT NULL
+  ,seq INTEGER NULL
+  ,inactive BOOLEAN NOT NULL
+  ,dispName TEXT(250) NOT NULL
+  ,description TEXT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.559Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('aboolean','attributes','aboolean',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.560Z: Info: finishTable(): CREATE TABLE bodenbedeckungsart (
+  itfCode INTEGER NOT NULL PRIMARY KEY
+  ,iliCode TEXT(1024) NOT NULL
+  ,seq INTEGER NULL
+  ,inactive BOOLEAN NOT NULL
+  ,dispName TEXT(250) NOT NULL
+  ,description TEXT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.560Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('bodenbedeckungsart','attributes','bodenbedeckungsart',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.560Z: Info: finishTable(): CREATE TABLE T_ILI2DB_CLASSNAME (
+  IliName TEXT(1024) NOT NULL PRIMARY KEY
+  ,SqlName TEXT(1024) NOT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.560Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_CLASSNAME','attributes','T_ILI2DB_CLASSNAME',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.560Z: Info: finishTable(): CREATE TABLE T_ILI2DB_ATTRNAME (
+  IliName TEXT(1024) NOT NULL
+  ,SqlName TEXT(1024) NOT NULL
+  ,ColOwner TEXT(1024) NOT NULL
+  ,Target TEXT(1024) NULL
+  ,CONSTRAINT T_ILI2DB_ATTRNAME_ColOwner_SqlName_key UNIQUE (ColOwner,SqlName)
+  ,PRIMARY KEY (ColOwner,SqlName)
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.560Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_ATTRNAME','attributes','T_ILI2DB_ATTRNAME',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.561Z: Info: finishTable(): CREATE TABLE T_ILI2DB_COLUMN_PROP (
+  tablename TEXT(255) NOT NULL
+  ,subtype TEXT(255) NULL
+  ,columnname TEXT(255) NOT NULL
+  ,tag TEXT(1024) NOT NULL
+  ,setting TEXT(8000) NOT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.561Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_COLUMN_PROP','attributes','T_ILI2DB_COLUMN_PROP',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.561Z: Info: finishTable(): CREATE TABLE T_ILI2DB_TABLE_PROP (
+  tablename TEXT(255) NOT NULL
+  ,tag TEXT(1024) NOT NULL
+  ,setting TEXT(8000) NOT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.561Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_ILI2DB_TABLE_PROP','attributes','T_ILI2DB_TABLE_PROP',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.561Z: Info: finishTable(): CREATE TABLE T_KEY_OBJECT (
+  T_Key TEXT(30) NOT NULL PRIMARY KEY
+  ,T_LastUniqueId INTEGER NOT NULL
+  ,T_LastChange DATETIME NOT NULL
+  ,T_CreateDate DATETIME NOT NULL
+  ,T_User TEXT(40) NOT NULL
+) (GeneratorGeoPackage.java:278)
+2026-02-20 19:25:03.561Z: Info: visit1TableEnd(): INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change)VALUES ('T_KEY_OBJECT','attributes','T_KEY_OBJECT',null,'2026-02-20T20:25:03.547Z') (GeneratorGeoPackage.java:305)
+2026-02-20 19:25:03.564Z: Info: readTableMappingTableEntries(): SELECT IliName FROM T_ILI2DB_CLASSNAME (NameMapping.java:494)
+2026-02-20 19:25:03.566Z: Info: updateTableMappingTable(): INSERT INTO T_ILI2DB_CLASSNAME (IliName,SqlName) VALUES (?,?) (NameMapping.java:533)
+2026-02-20 19:25:03.567Z: Info: flush(): single updates executed: 19 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.567Z: Info: readAttrMappingTableEntries(): SELECT IliName,ColOwner,Target FROM T_ILI2DB_ATTRNAME (ColumnNameMapping.java:69)
+2026-02-20 19:25:03.567Z: Info: updateAttrMappingTable(): INSERT INTO T_ILI2DB_ATTRNAME (IliName,SqlName,ColOwner,Target) VALUES (?,?,?,?) (ColumnNameMapping.java:109)
+2026-02-20 19:25:03.568Z: Info: flush(): single updates executed: 38 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.568Z: Info: read(): SELECT iliname,tag,setting FROM T_ILI2DB_TRAFO (TrafoConfig.java:46)
+2026-02-20 19:25:03.568Z: Info: updateTrafoConfig(): UPDATE T_ILI2DB_TRAFO SET setting=? WHERE iliname=? AND tag=? (TrafoConfig.java:95)
+2026-02-20 19:25:03.568Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.568Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.568Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.568Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.568Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.568Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.568Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.569Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.569Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.569Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.569Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.569Z: Info: updateTrafoConfig(): INSERT INTO T_ILI2DB_TRAFO (iliname,tag,setting) VALUES (?,?,?) (TrafoConfig.java:125)
+2026-02-20 19:25:03.569Z: Info: readInheritanceTable(): SELECT thisClass FROM T_ILI2DB_INHERITANCE (TransferFromIli.java:1213)
+2026-02-20 19:25:03.569Z: Info: updateInheritanceTable(): INSERT INTO T_ILI2DB_INHERITANCE (thisClass,baseClass) VALUES (?,?) (TransferFromIli.java:1252)
+2026-02-20 19:25:03.570Z: Info: flush(): single updates executed: 9 (StatementExecutionHelper.java:50)
+2026-02-20 19:25:03.570Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM valignment (EnumValueMap.java:87)
+2026-02-20 19:25:03.570Z: Info: updateMultiEnumTable(): INSERT INTO valignment (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:25:03.571Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM darstellungin (EnumValueMap.java:87)
+2026-02-20 19:25:03.571Z: Info: updateMultiEnumTable(): INSERT INTO darstellungin (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:25:03.571Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM halignment (EnumValueMap.java:87)
+2026-02-20 19:25:03.571Z: Info: updateMultiEnumTable(): INSERT INTO halignment (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:25:03.571Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM objektstatus (EnumValueMap.java:87)
+2026-02-20 19:25:03.571Z: Info: updateMultiEnumTable(): INSERT INTO objektstatus (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:25:03.572Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM qualitaetsstandard (EnumValueMap.java:87)
+2026-02-20 19:25:03.572Z: Info: updateMultiEnumTable(): INSERT INTO qualitaetsstandard (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:25:03.572Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM schriftgroesse (EnumValueMap.java:87)
+2026-02-20 19:25:03.572Z: Info: updateMultiEnumTable(): INSERT INTO schriftgroesse (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:25:03.572Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM aboolean (EnumValueMap.java:87)
+2026-02-20 19:25:03.572Z: Info: updateMultiEnumTable(): INSERT INTO aboolean (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:25:03.572Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM bodenbedeckungsart (EnumValueMap.java:87)
+2026-02-20 19:25:03.572Z: Info: updateMultiEnumTable(): INSERT INTO bodenbedeckungsart (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:25:03.573Z: Info: readColumnTab(): SELECT tablename,subtype,columnname,tag,setting FROM T_ILI2DB_COLUMN_PROP (DbExtMetaInfo.java:172)
+2026-02-20 19:25:03.573Z: Info: saveColumnTab(): INSERT INTO T_ILI2DB_COLUMN_PROP (tablename,subtype,columnname,tag,setting) VALUES (?,?,?,?,?) (DbExtMetaInfo.java:119)
+2026-02-20 19:25:03.573Z: Info: readTableTab(): SELECT tablename,tag,setting FROM T_ILI2DB_TABLE_PROP (DbExtMetaInfo.java:268)
+2026-02-20 19:25:03.573Z: Info: saveTableTab(): INSERT INTO T_ILI2DB_TABLE_PROP (tablename,tag,setting) VALUES (?,?,?) (DbExtMetaInfo.java:220)
+2026-02-20 19:25:03.574Z: Info: readIliFiles(): SELECT filename,iliversion,modelName FROM T_ILI2DB_MODEL (TransferFromIli.java:459)
+2026-02-20 19:25:03.574Z: Info: addModels(): INSERT INTO T_ILI2DB_MODEL (filename,iliversion,modelName,content,importDate) VALUES (?,?,?,?,?) (TransferFromIli.java:595)
+2026-02-20 19:25:03.575Z: Info: updateSettings(): INSERT INTO T_ILI2DB_SETTINGS (tag,setting) VALUES (?,?) (TransferFromIli.java:751)
+2026-02-20 19:25:03.577Z: Info: ...done

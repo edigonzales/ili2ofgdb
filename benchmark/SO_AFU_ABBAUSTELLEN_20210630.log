@@ -1,0 +1,213 @@
+2026-02-20 19:14:19.494Z: Info: ili2ofgdb-5.5.2-SNAPSHOT-137105fb93ca2638c5fc6a77f25f1c9339268819
+2026-02-20 19:14:19.501Z: Info: ili2c-5.6.8-e6f7ab6dd5cdba29afc9b24866ecb98c057d82b2
+2026-02-20 19:14:19.502Z: Info: iox-ili-1.24.4-8e966a086a72e7e2990a312b1229ee5878fd5994
+2026-02-20 19:14:19.502Z: Info: java.version 25.0.1
+2026-02-20 19:14:19.502Z: Info: user.name <stefan>
+2026-02-20 19:14:19.502Z: Info: maxMemory 4194304 KB
+2026-02-20 19:14:19.502Z: Info: currentTime 2026-02-20 20:14:19
+2026-02-20 19:14:19.504Z: Info: resolvePathMap(): pathmap key <%ILI_FROM_DB> (Main.java:1002)
+2026-02-20 19:14:19.505Z: Info: resolvePathMap(): pathmap key <%XTF_DIR> (Main.java:1002)
+2026-02-20 19:14:19.505Z: Info: resolvePathMap(): pathmap key <%JAR_DIR> (Main.java:1002)
+2026-02-20 19:14:19.505Z: Info: setRepositories(): uri <http://models.interlis.ch/> (IliManager.java:94)
+2026-02-20 19:14:19.506Z: Info: dburl <jdbc:ili2ofgdb:/Users/stefan/sources/ili2ofgdb/benchmark/SO_AFU_ABBAUSTELLEN_20210630.gdb>
+2026-02-20 19:14:19.506Z: Info: dbusr <>
+2026-02-20 19:14:19.507Z: Info: databaseProduct <ESRI FileGDB API>
+2026-02-20 19:14:19.507Z: Info: databaseVersion <1.5>
+2026-02-20 19:14:19.507Z: Info: driverName <openfgdb4j>
+2026-02-20 19:14:19.508Z: Info: driverVersion <openfgdb4j>
+2026-02-20 19:14:19.508Z: Info: max active DB statements <0>
+2026-02-20 19:14:19.508Z: Info: compile models...
+2026-02-20 19:14:19.508Z: Info: getModelRepos(): pathmap key <%ILI_FROM_DB> (Main.java:1052)
+2026-02-20 19:14:19.508Z: Info: getModelRepos(): pathmap key <%XTF_DIR> (Main.java:1052)
+2026-02-20 19:14:19.508Z: Info: getModelRepos(): pathmap key <%JAR_DIR> (Main.java:1052)
+2026-02-20 19:14:19.509Z: Info: setRepositories(): uri <http://models.interlis.ch/> (IliManager.java:94)
+2026-02-20 19:14:19.509Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <http://models.interlis.ch/>
+2026-02-20 19:14:19.509Z: Info: getIliFiles(): read ilimodels.xml from <http://models.interlis.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:19.543Z: Info: getIliSite(): read ilisite.xml from <http://models.interlis.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:19.545Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <http://models.geo.admin.ch/>
+2026-02-20 19:14:19.545Z: Info: getIliFiles(): read ilimodels.xml from <http://models.geo.admin.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:19.617Z: Info: getIliSite(): read ilisite.xml from <http://models.geo.admin.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:19.617Z: Info: fetchFromHttpServer(): fetching <http://models.geo.admin.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:19.747Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.kgk-cgc.ch/>
+2026-02-20 19:14:19.747Z: Info: getIliFiles(): read ilimodels.xml from <https://models.kgk-cgc.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:19.748Z: Info: fetchFromHttpServer(): fetching <https://models.kgk-cgc.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.40Z: Warning: model KGKCGC_FPDS2_V1_1_IT: duplicate version without precursor; version 2022-08-14 ignored
+2026-02-20 19:14:20.40Z: Warning: model KGKCGC_FPDS2_V1_1_FR: duplicate version without precursor; version 2022-07-14 ignored
+2026-02-20 19:14:20.40Z: Warning: model KGKCGC_FPDS2_V1_1: duplicate version without precursor; version 2022-07-14 ignored
+2026-02-20 19:14:20.40Z: Info: getIliSite(): read ilisite.xml from <https://models.kgk-cgc.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.41Z: Info: fetchFromHttpServer(): fetching <https://models.kgk-cgc.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.94Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.interlis.ch/>
+2026-02-20 19:14:20.94Z: Info: getIliFiles(): read ilimodels.xml from <https://models.interlis.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.96Z: Info: getIliSite(): read ilisite.xml from <https://models.interlis.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.96Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.llv.li/>
+2026-02-20 19:14:20.96Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.llv.li/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.97Z: Info: fetchFromHttpServer(): fetching <https://models.geo.llv.li/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.213Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.llv.li/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.214Z: Info: fetchFromHttpServer(): fetching <https://models.geo.llv.li/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.230Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://405.sia.ch/models/>
+2026-02-20 19:14:20.230Z: Info: getIliFiles(): read ilimodels.xml from <https://405.sia.ch/models/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.230Z: Info: fetchFromHttpServer(): fetching <https://405.sia.ch/models/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.341Z: Info: getIliSite(): read ilisite.xml from <https://405.sia.ch/models/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.342Z: Info: fetchFromHttpServer(): fetching <https://405.sia.ch/models/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.354Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.admin.ch/>
+2026-02-20 19:14:20.354Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.admin.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.379Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.admin.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.380Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.ag.ch/>
+2026-02-20 19:14:20.380Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.ag.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.380Z: Info: fetchFromHttpServer(): fetching <https://models.geo.ag.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.502Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.ag.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.502Z: Info: fetchFromHttpServer(): fetching <https://models.geo.ag.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.529Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <http://models.geo.ai.ch/>
+2026-02-20 19:14:20.530Z: Info: getIliFiles(): read ilimodels.xml from <http://models.geo.ai.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.530Z: Info: fetchFromHttpServer(): fetching <http://models.geo.ai.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.619Z: Info: getIliSite(): read ilisite.xml from <http://models.geo.ai.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.620Z: Info: fetchFromHttpServer(): fetching <http://models.geo.ai.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.636Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.kgk-cgc.ch/>
+2026-02-20 19:14:20.636Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.kgk-cgc.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.637Z: Info: fetchFromHttpServer(): fetching <https://models.geo.kgk-cgc.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.723Z: Warning: model KGKCGC_FPDS2_V1_1_IT: duplicate version without precursor; version 2022-08-14 ignored
+2026-02-20 19:14:20.723Z: Warning: model KGKCGC_FPDS2_V1_1_FR: duplicate version without precursor; version 2022-07-14 ignored
+2026-02-20 19:14:20.723Z: Warning: model KGKCGC_FPDS2_V1_1: duplicate version without precursor; version 2022-07-14 ignored
+2026-02-20 19:14:20.723Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.kgk-cgc.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.723Z: Info: fetchFromHttpServer(): fetching <https://models.geo.kgk-cgc.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.775Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.ar.ch/>
+2026-02-20 19:14:20.775Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.ar.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.776Z: Info: fetchFromHttpServer(): fetching <https://models.geo.ar.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.907Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.ar.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.907Z: Info: fetchFromHttpServer(): fetching <https://models.geo.ar.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:20.926Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <http://models.geo.kgk-cgc.ch/>
+2026-02-20 19:14:20.926Z: Info: getIliFiles(): read ilimodels.xml from <http://models.geo.kgk-cgc.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.926Z: Warning: model KGKCGC_FPDS2_V1_1_IT: duplicate version without precursor; version 2022-08-14 ignored
+2026-02-20 19:14:20.927Z: Warning: model KGKCGC_FPDS2_V1_1_FR: duplicate version without precursor; version 2022-07-14 ignored
+2026-02-20 19:14:20.927Z: Warning: model KGKCGC_FPDS2_V1_1: duplicate version without precursor; version 2022-07-14 ignored
+2026-02-20 19:14:20.927Z: Info: getIliSite(): read ilisite.xml from <http://models.geo.kgk-cgc.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:20.929Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.be.ch/>
+2026-02-20 19:14:20.929Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.be.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:20.930Z: Info: fetchFromHttpServer(): fetching <https://models.geo.be.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.30Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.be.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:21.30Z: Info: fetchFromHttpServer(): fetching <https://models.geo.be.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.49Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.bl.ch/>
+2026-02-20 19:14:21.49Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.bl.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:21.49Z: Info: fetchFromHttpServer(): fetching <https://models.geo.bl.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.225Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.bl.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:21.225Z: Info: fetchFromHttpServer(): fetching <https://models.geo.bl.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.244Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.bs.ch/>
+2026-02-20 19:14:21.244Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.bs.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:21.244Z: Info: fetchFromHttpServer(): fetching <https://models.geo.bs.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.382Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.bs.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:21.383Z: Info: fetchFromHttpServer(): fetching <https://models.geo.bs.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.403Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.gl.ch/>
+2026-02-20 19:14:21.403Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.gl.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:21.404Z: Info: fetchFromHttpServer(): fetching <https://models.geo.gl.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.579Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.gl.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:21.579Z: Info: fetchFromHttpServer(): fetching <https://models.geo.gl.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.597Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.gr.ch/>
+2026-02-20 19:14:21.597Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.gr.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:21.597Z: Info: fetchFromHttpServer(): fetching <https://models.geo.gr.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.734Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.gr.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:21.734Z: Info: fetchFromHttpServer(): fetching <https://models.geo.gr.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.761Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.lu.ch/>
+2026-02-20 19:14:21.761Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.lu.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:21.761Z: Info: fetchFromHttpServer(): fetching <https://models.geo.lu.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.888Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.lu.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:21.888Z: Info: fetchFromHttpServer(): fetching <https://models.geo.lu.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:21.932Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.gis-daten.ch/nw-ow/>
+2026-02-20 19:14:21.932Z: Info: getIliFiles(): read ilimodels.xml from <https://models.gis-daten.ch/nw-ow/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:21.932Z: Info: fetchFromHttpServer(): fetching <https://models.gis-daten.ch/nw-ow/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.181Z: Info: getIliSite(): read ilisite.xml from <https://models.gis-daten.ch/nw-ow/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:22.182Z: Info: fetchFromHttpServer(): fetching <https://models.gis-daten.ch/nw-ow/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.376Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.sg.ch/>
+2026-02-20 19:14:22.376Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.sg.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:22.377Z: Info: fetchFromHttpServer(): fetching <https://models.geo.sg.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.529Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.sg.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:22.530Z: Info: fetchFromHttpServer(): fetching <https://models.geo.sg.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.554Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://models.geo.sh.ch/>
+2026-02-20 19:14:22.555Z: Info: getIliFiles(): read ilimodels.xml from <https://models.geo.sh.ch/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:22.555Z: Info: fetchFromHttpServer(): fetching <https://models.geo.sh.ch/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.731Z: Info: getIliSite(): read ilisite.xml from <https://models.geo.sh.ch/>... (RepositoryAccess.java:165)
+2026-02-20 19:14:22.731Z: Info: fetchFromHttpServer(): fetching <https://models.geo.sh.ch/ilisite.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.750Z: Info: lookup model <SO_AFU_ABBAUSTELLEN_20210630> in repository <https://geo.so.ch/models/>
+2026-02-20 19:14:22.750Z: Info: getIliFiles(): read ilimodels.xml from <https://geo.so.ch/models/>... (RepositoryAccess.java:123)
+2026-02-20 19:14:22.751Z: Info: fetchFromHttpServer(): fetching <https://geo.so.ch/models/ilimodels.xml> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.880Z: Info: lookup model <GeometryCHLV95_V1> 2.3 in repository <http://models.interlis.ch/>
+2026-02-20 19:14:22.880Z: Info: lookup model <GeometryCHLV95_V1> 2.3 in repository <http://models.geo.admin.ch/>
+2026-02-20 19:14:22.880Z: Info: lookup model <CoordSys> 2.3 in repository <http://models.interlis.ch/>
+2026-02-20 19:14:22.880Z: Info: lookup model <Units> 2.3 in repository <http://models.interlis.ch/>
+2026-02-20 19:14:22.881Z: Info: fetchFromHttpServer(): fetching <http://models.interlis.ch/refhb23/Units-20120220.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.914Z: Info: fetchFromHttpServer(): fetching <http://models.interlis.ch/refhb23/CoordSys-20151124.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.947Z: Info: fetchFromHttpServer(): fetching <http://models.geo.admin.ch/CH/CHBase_Part1_GEOMETRY_V1.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:22.982Z: Info: fetchFromHttpServer(): fetching <https://geo.so.ch/models/AFU/SO_AFU_ABBAUSTELLEN_20210630.ili> ... (RepositoryAccess.java:1489)
+2026-02-20 19:14:23.03Z: Info: ilifile </Users/stefan/.ilicache/models.interlis.ch/refhb23/Units-20120220.ili>
+2026-02-20 19:14:23.03Z: Info: ilifile </Users/stefan/.ilicache/models.interlis.ch/refhb23/CoordSys-20151124.ili>
+2026-02-20 19:14:23.03Z: Info: ilifile </Users/stefan/.ilicache/models.geo.admin.ch/CH/CHBase_Part1_GEOMETRY_V1.ili>
+2026-02-20 19:14:23.03Z: Info: ilifile </Users/stefan/.ilicache/geo.so.ch/models/AFU/SO_AFU_ABBAUSTELLEN_20210630.ili>
+2026-02-20 19:14:23.82Z: Info: doSmart1(): viewable GeometryCHLV95_V1.SurfaceStructure newClass, surfacestructure (Viewable2TableMapper.java:268)
+2026-02-20 19:14:23.82Z: Info: doSmart1(): viewable GeometryCHLV95_V1.MultiSurface newClass, multisurface (Viewable2TableMapper.java:268)
+2026-02-20 19:14:23.82Z: Info: doSmart1(): viewable SO_AFU_ABBAUSTELLEN_20210630.GIS.Geometrie newClass, geometrie (Viewable2TableMapper.java:268)
+2026-02-20 19:14:23.82Z: Info: doSmart1(): viewable SO_AFU_ABBAUSTELLEN_20210630.Fachapplikation.Abbaustelle newClass, abbaustelle (Viewable2TableMapper.java:268)
+2026-02-20 19:14:23.82Z: Info: doSmart1(): viewable SO_AFU_ABBAUSTELLEN_20210630.Fachapplikation.Abbaustelle_Geometrie embedded, abbaustelle_geometrie (Viewable2TableMapper.java:268)
+2026-02-20 19:14:23.86Z: Info: create table structure, if not existing...
+2026-02-20 19:14:23.89Z: Info: generateViewable(): wrapper of viewable STRUCTURE GeometryCHLV95_V1.SurfaceStructure (TransferFromIli.java:260)
+2026-02-20 19:14:23.89Z: Info: generateViewable(): wrapper of viewable STRUCTURE GeometryCHLV95_V1.MultiSurface (TransferFromIli.java:260)
+2026-02-20 19:14:23.89Z: Info: generateViewable(): wrapper of viewable CLASS SO_AFU_ABBAUSTELLEN_20210630.GIS.Geometrie (TransferFromIli.java:260)
+2026-02-20 19:14:23.89Z: Info: generateViewable(): wrapper of viewable CLASS SO_AFU_ABBAUSTELLEN_20210630.Fachapplikation.Abbaustelle (TransferFromIli.java:260)
+2026-02-20 19:14:23.89Z: Info: generateViewable(): wrapper of viewable STRUCTURE GeometryCHLV95_V1.SurfaceStructure (TransferFromIli.java:260)
+2026-02-20 19:14:23.90Z: Info: generateViewable(): wrapper of viewable STRUCTURE GeometryCHLV95_V1.MultiSurface (TransferFromIli.java:260)
+2026-02-20 19:14:23.90Z: Info: generateViewable(): wrapper of viewable CLASS SO_AFU_ABBAUSTELLEN_20210630.GIS.Geometrie (TransferFromIli.java:260)
+2026-02-20 19:14:23.90Z: Info: generateViewable(): wrapper of viewable CLASS SO_AFU_ABBAUSTELLEN_20210630.Fachapplikation.Abbaustelle (TransferFromIli.java:260)
+2026-02-20 19:14:23.97Z: Info: execSql(): CREATE TABLE surfacestructure (T_Id INTEGER PRIMARY KEY NOT NULL, T_basket INTEGER NOT NULL, T_datasetname VARCHAR(200) NOT NULL, T_Ili_Tid VARCHAR(200), T_Seq INTEGER, surface OFGDB_GEOMETRY(POLYGON,2056,2), T_LastChange TIMESTAMP NOT NULL, T_CreateDate TIMESTAMP NOT NULL, T_User VARCHAR(40) NOT NULL, multisurface_surfaces INTEGER) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.117Z: Info: execSql(): CREATE TABLE multisurface (T_Id INTEGER PRIMARY KEY NOT NULL, T_basket INTEGER NOT NULL, T_datasetname VARCHAR(200) NOT NULL, T_Ili_Tid VARCHAR(200), T_Seq INTEGER, T_LastChange TIMESTAMP NOT NULL, T_CreateDate TIMESTAMP NOT NULL, T_User VARCHAR(40) NOT NULL) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.118Z: Info: execSql(): CREATE TABLE geometrie (T_Id INTEGER PRIMARY KEY NOT NULL, T_basket INTEGER NOT NULL, T_datasetname VARCHAR(200) NOT NULL, T_Ili_Tid VARCHAR(36), mpoly OFGDB_GEOMETRY(POLYGON,2056,2) NOT NULL, T_LastChange TIMESTAMP NOT NULL, T_CreateDate TIMESTAMP NOT NULL, T_User VARCHAR(40) NOT NULL) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.120Z: Info: execSql(): CREATE TABLE abbaustelle (T_Id INTEGER PRIMARY KEY NOT NULL, T_basket INTEGER NOT NULL, T_datasetname VARCHAR(200) NOT NULL, T_Ili_Tid VARCHAR(36), bezeichnung VARCHAR(256) NOT NULL, aktennummer VARCHAR(50) NOT NULL, gemeinde_name VARCHAR(256) NOT NULL, gemeinde_bfs INTEGER, art VARCHAR(255), art_txt VARCHAR(255), stand VARCHAR(255), stand_txt VARCHAR(255), rohstoffart VARCHAR(255), rohstoffart_txt VARCHAR(255), gestaltungsplanvorhanden SMALLINT NOT NULL, gestaltungsplanvorhanden_txt VARCHAR(255) NOT NULL, richtplannummer VARCHAR(50), standrichtplan VARCHAR(255), standrichtplan_txt VARCHAR(255), rrb_nr VARCHAR(50), rrb_datum TIMESTAMP, geometrie INTEGER NOT NULL, T_LastChange TIMESTAMP NOT NULL, T_CreateDate TIMESTAMP NOT NULL, T_User VARCHAR(40) NOT NULL) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.122Z: Info: execSql(): CREATE TABLE T_ILI2DB_BASKET (T_Id INTEGER PRIMARY KEY NOT NULL, dataset INTEGER, topic VARCHAR(200) NOT NULL, T_Ili_Tid VARCHAR(200), attachmentKey VARCHAR(200) NOT NULL, domains VARCHAR(1024)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.123Z: Info: execSql(): CREATE TABLE T_ILI2DB_DATASET (T_Id INTEGER PRIMARY KEY NOT NULL, datasetName VARCHAR(200)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.124Z: Info: execSql(): CREATE TABLE T_ILI2DB_INHERITANCE (thisClass VARCHAR(1024) NOT NULL, baseClass VARCHAR(1024)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.124Z: Info: execSql(): CREATE TABLE T_ILI2DB_SETTINGS (tag VARCHAR(60) NOT NULL, setting VARCHAR(8000)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.125Z: Info: execSql(): CREATE TABLE T_ILI2DB_TRAFO (iliname VARCHAR(1024) NOT NULL, tag VARCHAR(1024) NOT NULL, setting VARCHAR(1024) NOT NULL) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.125Z: Info: execSql(): CREATE TABLE T_ILI2DB_MODEL (filename VARCHAR(250) NOT NULL, iliversion VARCHAR(3) NOT NULL, modelName VARCHAR(4096) NOT NULL, content VARCHAR(4096) NOT NULL, importDate TIMESTAMP NOT NULL) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.126Z: Info: execSql(): CREATE TABLE rohstoffart_code (itfCode INTEGER NOT NULL, iliCode VARCHAR(1024) NOT NULL, seq INTEGER, inactive SMALLINT NOT NULL, dispName VARCHAR(250) NOT NULL, description VARCHAR(4096)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.127Z: Info: execSql(): CREATE TABLE art_code (itfCode INTEGER NOT NULL, iliCode VARCHAR(1024) NOT NULL, seq INTEGER, inactive SMALLINT NOT NULL, dispName VARCHAR(250) NOT NULL, description VARCHAR(4096)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.128Z: Info: execSql(): CREATE TABLE aboolean (itfCode INTEGER NOT NULL, iliCode VARCHAR(1024) NOT NULL, seq INTEGER, inactive SMALLINT NOT NULL, dispName VARCHAR(250) NOT NULL, description VARCHAR(4096)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.128Z: Info: execSql(): CREATE TABLE standrichtplan_code (itfCode INTEGER NOT NULL, iliCode VARCHAR(1024) NOT NULL, seq INTEGER, inactive SMALLINT NOT NULL, dispName VARCHAR(250) NOT NULL, description VARCHAR(4096)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.129Z: Info: execSql(): CREATE TABLE stand_code (itfCode INTEGER NOT NULL, iliCode VARCHAR(1024) NOT NULL, seq INTEGER, inactive SMALLINT NOT NULL, dispName VARCHAR(250) NOT NULL, description VARCHAR(4096)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.130Z: Info: execSql(): CREATE TABLE T_ILI2DB_CLASSNAME (IliName VARCHAR(1024) NOT NULL, SqlName VARCHAR(1024) NOT NULL) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.130Z: Info: execSql(): CREATE TABLE T_ILI2DB_ATTRNAME (IliName VARCHAR(1024) NOT NULL, SqlName VARCHAR(1024) NOT NULL, ColOwner VARCHAR(1024) NOT NULL, Target VARCHAR(1024)) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.131Z: Info: execSql(): CREATE TABLE T_ILI2DB_COLUMN_PROP (tablename VARCHAR(255) NOT NULL, subtype VARCHAR(255), columnname VARCHAR(255) NOT NULL, tag VARCHAR(1024) NOT NULL, setting VARCHAR(8000) NOT NULL) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.132Z: Info: execSql(): CREATE TABLE T_ILI2DB_TABLE_PROP (tablename VARCHAR(255) NOT NULL, tag VARCHAR(1024) NOT NULL, setting VARCHAR(8000) NOT NULL) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.132Z: Info: execSql(): CREATE TABLE T_KEY_OBJECT (T_Key VARCHAR(30) NOT NULL, T_LastUniqueId INTEGER NOT NULL, T_LastChange TIMESTAMP NOT NULL, T_CreateDate TIMESTAMP NOT NULL, T_User VARCHAR(40) NOT NULL) (GeneratorOfgdb.java:279)
+2026-02-20 19:14:23.133Z: Info: readTableMappingTableEntries(): SELECT IliName FROM T_ILI2DB_CLASSNAME (NameMapping.java:494)
+2026-02-20 19:14:23.140Z: Info: updateTableMappingTable(): INSERT INTO T_ILI2DB_CLASSNAME (IliName,SqlName) VALUES (?,?) (NameMapping.java:533)
+2026-02-20 19:14:23.142Z: Info: flush(): single updates executed: 10 (StatementExecutionHelper.java:50)
+2026-02-20 19:14:23.142Z: Info: readAttrMappingTableEntries(): SELECT IliName,ColOwner,Target FROM T_ILI2DB_ATTRNAME (ColumnNameMapping.java:69)
+2026-02-20 19:14:23.143Z: Info: updateAttrMappingTable(): INSERT INTO T_ILI2DB_ATTRNAME (IliName,SqlName,ColOwner,Target) VALUES (?,?,?,?) (ColumnNameMapping.java:109)
+2026-02-20 19:14:23.144Z: Info: flush(): single updates executed: 16 (StatementExecutionHelper.java:50)
+2026-02-20 19:14:23.144Z: Info: read(): SELECT iliname,tag,setting FROM T_ILI2DB_TRAFO (TrafoConfig.java:46)
+2026-02-20 19:14:23.145Z: Info: updateTrafoConfig(): UPDATE T_ILI2DB_TRAFO SET setting=? WHERE iliname=? AND tag=? (TrafoConfig.java:95)
+2026-02-20 19:14:23.145Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:14:23.145Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:14:23.145Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:14:23.145Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:14:23.145Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:14:23.145Z: Info: flush(): single updates executed: 0 (StatementExecutionHelper.java:50)
+2026-02-20 19:14:23.145Z: Info: updateTrafoConfig(): INSERT INTO T_ILI2DB_TRAFO (iliname,tag,setting) VALUES (?,?,?) (TrafoConfig.java:125)
+2026-02-20 19:14:23.146Z: Info: readInheritanceTable(): SELECT thisClass FROM T_ILI2DB_INHERITANCE (TransferFromIli.java:1213)
+2026-02-20 19:14:23.146Z: Info: updateInheritanceTable(): INSERT INTO T_ILI2DB_INHERITANCE (thisClass,baseClass) VALUES (?,?) (TransferFromIli.java:1252)
+2026-02-20 19:14:23.147Z: Info: flush(): single updates executed: 5 (StatementExecutionHelper.java:50)
+2026-02-20 19:14:23.147Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM rohstoffart_code (EnumValueMap.java:87)
+2026-02-20 19:14:23.147Z: Info: updateMultiEnumTable(): INSERT INTO rohstoffart_code (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:14:23.148Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM art_code (EnumValueMap.java:87)
+2026-02-20 19:14:23.148Z: Info: updateMultiEnumTable(): INSERT INTO art_code (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:14:23.150Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM aboolean (EnumValueMap.java:87)
+2026-02-20 19:14:23.150Z: Info: updateMultiEnumTable(): INSERT INTO aboolean (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:14:23.150Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM standrichtplan_code (EnumValueMap.java:87)
+2026-02-20 19:14:23.151Z: Info: updateMultiEnumTable(): INSERT INTO standrichtplan_code (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:14:23.151Z: Info: readEnumValueMapFromDb(): SELECT iliCode,dispName,description,itfCode FROM stand_code (EnumValueMap.java:87)
+2026-02-20 19:14:23.152Z: Info: updateMultiEnumTable(): INSERT INTO stand_code (seq,iliCode,itfCode,dispName,inactive,description) VALUES (?,?,?,?,?,?) (TransferFromIli.java:1476)
+2026-02-20 19:14:23.153Z: Info: readColumnTab(): SELECT tablename,subtype,columnname,tag,setting FROM T_ILI2DB_COLUMN_PROP (DbExtMetaInfo.java:172)
+2026-02-20 19:14:23.153Z: Info: saveColumnTab(): INSERT INTO T_ILI2DB_COLUMN_PROP (tablename,subtype,columnname,tag,setting) VALUES (?,?,?,?,?) (DbExtMetaInfo.java:119)
+2026-02-20 19:14:23.156Z: Info: readTableTab(): SELECT tablename,tag,setting FROM T_ILI2DB_TABLE_PROP (DbExtMetaInfo.java:268)
+2026-02-20 19:14:23.157Z: Info: saveTableTab(): INSERT INTO T_ILI2DB_TABLE_PROP (tablename,tag,setting) VALUES (?,?,?) (DbExtMetaInfo.java:220)
+2026-02-20 19:14:23.157Z: Info: readIliFiles(): SELECT filename,iliversion,modelName FROM T_ILI2DB_MODEL (TransferFromIli.java:459)
+2026-02-20 19:14:23.158Z: Info: addModels(): INSERT INTO T_ILI2DB_MODEL (filename,iliversion,modelName,content,importDate) VALUES (?,?,?,?,?) (TransferFromIli.java:595)
+2026-02-20 19:14:23.160Z: Info: updateSettings(): INSERT INTO T_ILI2DB_SETTINGS (tag,setting) VALUES (?,?) (TransferFromIli.java:751)
+2026-02-20 19:14:23.197Z: Info: ...done
