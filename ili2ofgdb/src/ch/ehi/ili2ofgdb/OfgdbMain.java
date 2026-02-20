@@ -72,7 +72,8 @@ public class OfgdbMain extends ch.ehi.ili2db.AbstractMain {
         System.err.println("--fgdbXyResolution value                The precision with which coordinates are recorded.");
         System.err.println("--fgdbXyTolerance value                 The cluster tolerance used to cluster coincident geometry.");
         System.err.println("--fgdbCreateDomains                     Create/assign FGDB domains from INTERLIS enums.");
-        System.err.println("--fgdbIncludeInactiveEnumValues         Include inactive enum values in created domains.");
+        // TODO: Braucht es das? Kann m.E. bei uns nicht vorkommen resp. spiel einfach keine Rolle. Gugus.
+        //System.err.println("--fgdbIncludeInactiveEnumValues         Include inactive enum values in created domains.");
         System.err.println("--fgdbCreateRelationshipClasses         Create FGDB relationship classes from model links.");
     }
 
