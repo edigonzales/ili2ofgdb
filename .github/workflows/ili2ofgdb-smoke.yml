@@ -66,7 +66,7 @@ jobs:
           JAVAC_22_BIN: ${{ steps.java25.outputs.path }}\bin\javac.exe
           JAVA_22_BIN: ${{ steps.java25.outputs.path }}\bin\java.exe
         run: |
-          .\gradlew.bat --no-daemon -x usrdoc -Dopenfgdb4jVersion=0.1.0-SNAPSHOT ili2ofgdbBindistSmoke
+          .\gradlew.bat --% --no-daemon -x usrdoc -Dopenfgdb4jVersion=0.1.0-SNAPSHOT ili2ofgdbBindistSmoke
 
   publish_bindist_snapshot:
     name: publish-ili2ofgdb-bindist
@@ -91,7 +91,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '25' 
+          java-version: '25'
 
       - name: Publish ili2ofgdb bindist snapshot
         shell: bash
