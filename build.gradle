@@ -483,20 +483,85 @@ task verifyOfgdbJavaToolchain {
 		}
 	}
 }
-task verifyNoTrackedBuildArtifacts(type: Exec) {
-	workingDir = project.projectDir
-	executable '/bin/zsh'
-	args '-lc', 'set -euo pipefail; if command -v rg >/dev/null 2>&1; then BAD=\"$(git ls-files | rg -n \"(\\\\.o$|\\\\.a$|\\\\.dylib$|/CMakeFiles/|/cmake_install\\\\.cmake$|/(build|dist|out)/)\" || true)\"; else BAD=\"$(git ls-files | grep -nE \"(\\\\.o$|\\\\.a$|\\\\.dylib$|/CMakeFiles/|/cmake_install\\\\.cmake$|/(build|dist|out)/)\" || true)\"; fi; if [ -n \"$BAD\" ]; then echo \"$BAD\"; echo \"Found tracked build artifacts. Update .gitignore or remove from index.\" >&2; exit 1; fi'
+def trackedGitFiles = {
+	def stdout = new ByteArrayOutputStream()
+	exec {
+		commandLine git, 'ls-files'
+		standardOutput = stdout
+	}
+	return stdout.toString('UTF-8').readLines()
 }
-task ili2ofgdbNoFgdb4jRefs(type: Exec) {
-	workingDir = project.projectDir
-	executable '/bin/zsh'
-	args '-lc', 'if command -v rg >/dev/null 2>&1; then if rg -n \"ch\\\\.ehi\\\\.fgdb4j\" ili2ofgdb/src; then echo \"Found forbidden fgdb4j references in ili2ofgdb/src\" >&2; exit 1; fi; else if grep -R -n -E \"ch\\\\.ehi\\\\.fgdb4j\" ili2ofgdb/src; then echo \"Found forbidden fgdb4j references in ili2ofgdb/src\" >&2; exit 1; fi; fi'
+def hasBuildArtifactMarker = { String normalizedPath ->
+	if (normalizedPath.endsWith('.o') || normalizedPath.endsWith('.a') || normalizedPath.endsWith('.dylib')) {
+		return true
+	}
+	if (normalizedPath.contains('/CMakeFiles/') || normalizedPath.endsWith('/cmake_install.cmake')) {
+		return true
+	}
+	return normalizedPath.tokenize('/').any { String segment -> segment in ['build', 'dist', 'out'] }
 }
-task ili2ofgdbNoLegacyFgdbCoreRefs(type: Exec) {
-	workingDir = project.projectDir
-	executable '/bin/zsh'
-	args '-lc', 'set -euo pipefail; if command -v rg >/dev/null 2>&1; then BAD=\"$(rg -n \"\\\\b(Fgdb2iox|FgdbColumnConverter|FgdbMetaData|FgdbSelectStmt)\\\\b\" ili2ofgdb/src/ch/ehi/ili2ofgdb ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/sql ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/parser | rg -v \"^(ili2ofgdb/src/ch/ehi/ili2ofgdb/Fgdb2iox.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/FgdbColumnConverter.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/FgdbMetaData.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/sql/FgdbSelectStmt.java):\" || true)\"; else BAD=\"$(grep -R -n -E \"\\\\b(Fgdb2iox|FgdbColumnConverter|FgdbMetaData|FgdbSelectStmt)\\\\b\" ili2ofgdb/src/ch/ehi/ili2ofgdb ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/sql ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/parser | grep -v -E \"^(ili2ofgdb/src/ch/ehi/ili2ofgdb/Fgdb2iox.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/FgdbColumnConverter.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/FgdbMetaData.java|ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/sql/FgdbSelectStmt.java):\" || true)\"; fi; if [ -n \"$BAD\" ]; then echo \"$BAD\"; echo \"Found forbidden legacy fgdb core references in ili2ofgdb/src\" >&2; exit 1; fi'
+def scanTextMatches = { File rootDir, Closure<Boolean> predicate ->
+	def findings = []
+	if (!rootDir.exists()) {
+		return findings
+	}
+	fileTree(rootDir).visit { details ->
+		if (details.isDirectory()) {
+			return
+		}
+		File file = details.file
+		String relative = project.relativePath(file).replace('\\', '/')
+		int lineNo = 0
+		file.eachLine('UTF-8') { String line ->
+			lineNo++
+			if (predicate(relative, line, lineNo)) {
+				findings << "${relative}:${lineNo}:${line.trim()}"
+			}
+		}
+	}
+	return findings
+}
+
+task verifyNoTrackedBuildArtifacts {
+	doLast {
+		def bad = []
+		trackedGitFiles().eachWithIndex { String path, int idx ->
+			String normalized = path.replace('\\', '/')
+			if (hasBuildArtifactMarker(normalized)) {
+				bad << "${idx + 1}:${path}"
+			}
+		}
+		if (!bad.isEmpty()) {
+			throw new GradleException("Found tracked build artifacts. Update .gitignore or remove from index.\n" + bad.join('\n'))
+		}
+	}
+}
+task ili2ofgdbNoFgdb4jRefs {
+	doLast {
+		def findings = scanTextMatches(file('ili2ofgdb/src')) { String rel, String line, int lineNo ->
+			return line.contains('ch.ehi.fgdb4j')
+		}
+		if (!findings.isEmpty()) {
+			throw new GradleException("Found forbidden fgdb4j references in ili2ofgdb/src:\n" + findings.join('\n'))
+		}
+	}
+}
+task ili2ofgdbNoLegacyFgdbCoreRefs {
+	doLast {
+		def forbiddenPattern = ~/\b(Fgdb2iox|FgdbColumnConverter|FgdbMetaData|FgdbSelectStmt)\b/
+		def allowedPaths = [
+			'ili2ofgdb/src/ch/ehi/ili2ofgdb/Fgdb2iox.java',
+			'ili2ofgdb/src/ch/ehi/ili2ofgdb/FgdbColumnConverter.java',
+			'ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/FgdbMetaData.java',
+			'ili2ofgdb/src/ch/ehi/ili2ofgdb/jdbc/sql/FgdbSelectStmt.java'
+		] as Set
+		def findings = scanTextMatches(file('ili2ofgdb/src')) { String rel, String line, int lineNo ->
+			return !allowedPaths.contains(rel) && (line =~ forbiddenPattern).find()
+		}
+		if (!findings.isEmpty()) {
+			throw new GradleException("Found forbidden legacy fgdb core references in ili2ofgdb/src:\n" + findings.join('\n'))
+		}
+	}
 }
 compileIli2ofgdbJava {
 	dependsOn verifyNoTrackedBuildArtifacts
