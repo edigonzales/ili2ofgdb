@@ -23,3 +23,69 @@ dist/
 /gdal-minimal/build/
 /gdal-minimal/third_party/downloads/
 /gdal-minimal/third_party/src/
+
+# local scratch
+/temp/
+
+# local IDE-only
+/gradle.properties
+
+# generated test logs (narrow per folder)
+/test/data/Array/*.log
+/test/data/Assoc23/*.log
+/test/data/BatchSize/*.log
+/test/data/Crs/*.log
+/test/data/Dataset10/*.log
+/test/data/Datatypes23/*.log
+/test/data/Documentation/*.log
+/test/data/Enum23/*.log
+/test/data/ExpandStruct/*.log
+/test/data/ExtRef/*.log
+/test/data/FetchSize/*.log
+/test/data/FilterImport/*.log
+/test/data/GenericValueRanges24/*.log
+/test/data/GeomIndex/*.log
+/test/data/Json/*.log
+/test/data/ListOfBagOfPrimTypes24/*.log
+/test/data/MetaConfig/*.log
+/test/data/MetaInfo/*.log
+/test/data/MultiCoord24/*.log
+/test/data/MultiPoint/*.log
+/test/data/MultiPolyline24/*.log
+/test/data/MultiSurfaceArea24/*.log
+/test/data/MultilingualText/*.log
+/test/data/MultipleGeomAttrs/*.log
+/test/data/Oid23/*.log
+/test/data/ReferenceType/*.log
+/test/data/Rounder/*.log
+/test/data/Simple/*.log
+/test/data/Translation/*.log
+/test/data/UniqueIndex/*.log
+/test/data/Update/*.log
+/test/data/Validation/*.log
+/test/data/View/*.log
+/test/data/XtfHeader/*.log
+/test/data/XtfVersion/*.log
+
+# generated exports (narrow per folder)
+/test/data/Assoc23/*-out.xtf
+/test/data/Dataset10/*-out.xtf
+/test/data/Datatypes23/*-out.xtf
+/test/data/Enum23/*-out.xtf
+/test/data/ExpandStruct/*-out.xtf
+/test/data/ExtRef/*-out.xtf
+/test/data/FetchSize/*-out.xtf
+/test/data/Json/*-out.xtf
+/test/data/MultilingualText/*-out.xtf
+/test/data/MultipleGeomAttrs/*-out.xtf
+/test/data/View/*-out.xtf
+/test/data/XtfHeader/*-out.xtf
+
+# generated gdb sidecars (only where observed)
+/test/data/Datatypes23/Datatypes23.gdb/*.spx
+/test/data/MultiLine/MultiLine.gdb/*.spx
+/test/data/MultiSurface/MultiSurface.gdb/*.spx
+/test/data/MultipleGeomAttrs/MultipleGeomAttrs.gdb/*.spx
+
+# generated duplicate input file with space
+/test/data/Dataset10/Dataset\ 10a.itf

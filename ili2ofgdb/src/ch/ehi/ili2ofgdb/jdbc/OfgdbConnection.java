@@ -35,13 +35,7 @@ public class OfgdbConnection implements Connection {
         this.api = api;
         this.dbHandle = dbHandle;
         this.url = url;
-        try {
-            for (String tableName : api.listTableNames(dbHandle)) {
-                registerTableName(tableName);
-            }
-        } catch (OpenFgdbException ignore) {
-            // Metadata bootstrap should not block connection creation.
-        }
+        refreshKnownTableNames();
     }
 
     OpenFgdb getApi() {
@@ -50,6 +44,23 @@ public class OfgdbConnection implements Connection {
 
     long getDbHandle() {
         return dbHandle;
+    }
+
+    void reopenSession() throws SQLException {
+        ensureOpen();
+        String dbPath = getDbPath();
+        try {
+            if (dbHandle != 0L) {
+                api.close(dbHandle);
+            }
+            dbHandle = api.open(dbPath);
+            synchronized (this) {
+                knownTables.clear();
+            }
+            refreshKnownTableNames();
+        } catch (OpenFgdbException e) {
+            throw new SQLException("failed to reopen openfgdb connection", e);
+        }
     }
 
     public OpenFgdb getOpenFgdbApi() throws SQLException {
@@ -66,20 +77,76 @@ public class OfgdbConnection implements Connection {
         return url;
     }
 
-    void registerTableName(String tableName) {
+    synchronized void registerTableName(String tableName) {
         if (tableName != null && !tableName.isEmpty()) {
             knownTables.add(tableName);
         }
     }
 
-    void removeTableName(String tableName) {
+    synchronized void removeTableName(String tableName) {
         if (tableName != null) {
             knownTables.remove(tableName);
         }
     }
 
-    java.util.List<String> getKnownTableNames() {
+    synchronized java.util.List<String> getKnownTableNames() {
         return new ArrayList<String>(knownTables);
+    }
+
+    String resolveTableName(String tableName) {
+        String probe = normalizeIdentifier(tableName);
+        if (probe == null || probe.isEmpty()) {
+            return tableName;
+        }
+        String resolved = findKnownTableName(probe);
+        if (resolved != null) {
+            return resolved;
+        }
+        refreshKnownTableNames();
+        resolved = findKnownTableName(probe);
+        return resolved != null ? resolved : probe;
+    }
+
+    private synchronized String findKnownTableName(String probe) {
+        for (String known : knownTables) {
+            if (known.equals(probe)) {
+                return known;
+            }
+        }
+        for (String known : knownTables) {
+            if (known.equalsIgnoreCase(probe)) {
+                return known;
+            }
+        }
+        return null;
+    }
+
+    private static String normalizeIdentifier(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        String normalized = identifier.trim();
+        if (normalized.length() >= 2 && normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            normalized = normalized.substring(1, normalized.length() - 1);
+        }
+        return normalized;
+    }
+
+    private String getDbPath() {
+        if (url != null && url.startsWith(OfgdbDriver.BASE_URL)) {
+            return url.substring(OfgdbDriver.BASE_URL.length());
+        }
+        return url;
+    }
+
+    private void refreshKnownTableNames() {
+        try {
+            for (String tableName : api.listTableNames(dbHandle)) {
+                registerTableName(tableName);
+            }
+        } catch (OpenFgdbException ignore) {
+            // Metadata bootstrap should not block connection creation.
+        }
     }
 
     @Override

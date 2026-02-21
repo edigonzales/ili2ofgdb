@@ -52,6 +52,10 @@ public class OfgdbTestSetup extends ch.ehi.ili2db.AbstractTestSetup {
     @Override
     public void resetDb() throws SQLException {
         File fgdbFile=new File(fgdbFilename);
+        File parentDir = fgdbFile.getParentFile();
+        if (parentDir != null && !parentDir.exists()) {
+            parentDir.mkdirs();
+        }
         OfgdbTestFiles.deleteFileGdb(fgdbFile);
     }
 

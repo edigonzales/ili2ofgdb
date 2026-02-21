@@ -54,6 +54,7 @@ public class OfgdbMapping extends AbstractJdbcMapping {
     private boolean includeInactiveEnumValues = false;
     private boolean createRelationships = true;
     private NameMapping enumNameMapping = null;
+    private TransferDescription transferDescription = null;
     private String defaultXyResolution = null;
     private String defaultXyTolerance = null;
 
@@ -67,9 +68,10 @@ public class OfgdbMapping extends AbstractJdbcMapping {
         createDomains = config.isFgdbCreateDomains();
         includeInactiveEnumValues = config.isFgdbIncludeInactiveEnumValues();
         createRelationships = config.isFgdbCreateRelationshipClasses();
-        TransferDescription td = (TransferDescription) config.getTransientObject(Config.TRANSIENT_MODEL);
-        if (td != null) {
-            enumNameMapping = new NameMapping(td, config);
+        transferDescription = (TransferDescription) config.getTransientObject(Config.TRANSIENT_MODEL);
+        enumNameMapping = null;
+        if (transferDescription != null) {
+            enumNameMapping = new NameMapping(transferDescription, config);
         }
     }
 
@@ -86,16 +88,20 @@ public class OfgdbMapping extends AbstractJdbcMapping {
         if (!createDomains || sqlTableDef == null || sqlColDef == null || iliAttrDef == null) {
             return;
         }
-        Type type = iliAttrDef.getDomainResolvingAll();
-        if (!(type instanceof AbstractEnumerationType)) {
+        Type effectiveType = iliAttrDef.getDomainResolvingAll();
+        if (!(effectiveType instanceof AbstractEnumerationType)) {
             return;
         }
-        Element enumOwner = iliAttrDef;
         Type originalType = iliAttrDef.getDomain();
+        Domain rootAliasDomain = null;
         if (originalType instanceof TypeAlias) {
             Domain alias = ((TypeAlias) originalType).getAliasing();
-            enumOwner = Ili2cUtility.getRootBaseDomain(alias);
+            rootAliasDomain = Ili2cUtility.getRootBaseDomain(alias);
+            if (isBooleanAlias(originalType, rootAliasDomain)) {
+                return;
+            }
         }
+        Element enumOwner = resolveEnumOwner(iliAttrDef, originalType, rootAliasDomain);
         String domainName = resolveDomainName(iliAttrDef);
         String sanitizedDomainName = sanitizeName(domainName);
         String fieldType = resolveFieldType(sqlColDef);
@@ -105,7 +111,7 @@ public class OfgdbMapping extends AbstractJdbcMapping {
             domainDefinition = new DomainDefinition();
             domainDefinition.domainName = sanitizedDomainName;
             domainDefinition.fieldType = fieldType;
-            domainDefinition.codedValues.putAll(buildEnumValues(enumOwner, (AbstractEnumerationType) type));
+            domainDefinition.codedValues.putAll(buildEnumValues(enumOwner, (AbstractEnumerationType) effectiveType));
             domains.put(sanitizedDomainName, domainDefinition);
         }
 
@@ -468,6 +474,30 @@ public class OfgdbMapping extends AbstractJdbcMapping {
             return alias.getScopedName(null);
         }
         return iliAttrDef.getContainer().getScopedName(null) + "." + iliAttrDef.getName();
+    }
+
+    private Element resolveEnumOwner(AttributeDef iliAttrDef, Type originalType, Domain rootAliasDomain) {
+        if (!(originalType instanceof TypeAlias) || rootAliasDomain == null) {
+            return iliAttrDef;
+        }
+        if (rootAliasDomain.getType() instanceof AbstractEnumerationType) {
+            return rootAliasDomain;
+        }
+        return iliAttrDef;
+    }
+
+    private boolean isBooleanAlias(Type originalType, Domain rootAliasDomain) {
+        if (!(originalType instanceof TypeAlias)) {
+            return false;
+        }
+        if (transferDescription != null && Ili2cUtility.isBoolean(transferDescription, originalType)) {
+            return true;
+        }
+        if (rootAliasDomain != null && transferDescription != null
+                && Ili2cUtility.isBoolean(transferDescription, rootAliasDomain.getType())) {
+            return true;
+        }
+        return rootAliasDomain != null && "INTERLIS.BOOLEAN".equalsIgnoreCase(rootAliasDomain.getScopedName(null));
     }
 
     private Map<String, String> buildEnumValues(Element enumOwner, AbstractEnumerationType enumType) {
