@@ -210,12 +210,12 @@ public class OfgdbMetaData implements DatabaseMetaData {
 
 	@Override
 	public int getDriverMajorVersion() {
-		return 1;
+		return 0;
 	}
 
 	@Override
 	public int getDriverMinorVersion() {
-		return 0;
+		return 1;
 	}
 
 	@Override
@@ -225,7 +225,7 @@ public class OfgdbMetaData implements DatabaseMetaData {
 
 	@Override
 	public String getDriverVersion() throws SQLException {
-		return "openfgdb4j";
+		return String.valueOf(getDriverMajorVersion()) + "." + String.valueOf(getDriverMinorVersion());
 	}
 
 	@Override

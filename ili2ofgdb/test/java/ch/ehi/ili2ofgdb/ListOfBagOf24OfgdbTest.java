@@ -3,6 +3,7 @@ package ch.ehi.ili2ofgdb;
 import org.junit.Ignore;
 
 import ch.ehi.ili2db.AbstractTestSetup;
+import ch.interlis.iox_j.wkb.Wkb2iox;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -48,13 +49,13 @@ public class ListOfBagOf24OfgdbTest extends ch.ehi.ili2db.ListOfBagOf24Test {
         try {
             statement = jdbcConnection.createStatement();
             ResultSet resultSet = statement.executeQuery("SELECT attr8 FROM " + setup.prefixName("classa1"));
-            Ofgdb2iox ofgdb2iox = new Ofgdb2iox();
+            Wkb2iox wkb2iox = new Wkb2iox();
             while (resultSet.next()) {
-                Object value = resultSet.getObject(1);
-                if (!(value instanceof byte[])) {
-                    fail("expected binary value in geometry column but got " + (value == null ? "null" : value.getClass().getName()));
+                byte[] value = resultSet.getBytes(1);
+                if (value == null) {
+                    fail("expected binary value in geometry column but got null");
                 }
-                assertEquals("COORD {C1 480000.0, C2 70000.0}", ofgdb2iox.read((byte[]) value).toString());
+                assertEquals("COORD {C1 480000.0, C2 70000.0}", wkb2iox.read(value).toString());
             }
         } finally {
             if (statement != null) {
@@ -69,13 +70,13 @@ public class ListOfBagOf24OfgdbTest extends ch.ehi.ili2db.ListOfBagOf24Test {
         try {
             statement = jdbcConnection.createStatement();
             ResultSet resultSet = statement.executeQuery("SELECT attr9 FROM " + setup.prefixName("classa1_attr9"));
-            Ofgdb2iox ofgdb2iox = new Ofgdb2iox();
+            Wkb2iox wkb2iox = new Wkb2iox();
             while (resultSet.next()) {
-                Object value = resultSet.getObject(1);
-                if (!(value instanceof byte[])) {
-                    fail("expected binary value in geometry column but got " + (value == null ? "null" : value.getClass().getName()));
+                byte[] value = resultSet.getBytes(1);
+                if (value == null) {
+                    fail("expected binary value in geometry column but got null");
                 }
-                assertEquals("COORD {C1 500000.0, C2 72000.0}", ofgdb2iox.read((byte[]) value).toString());
+                assertEquals("COORD {C1 500000.0, C2 72000.0}", wkb2iox.read(value).toString());
             }
         } finally {
             if (statement != null) {

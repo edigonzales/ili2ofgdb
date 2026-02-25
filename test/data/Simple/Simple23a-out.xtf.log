@@ -1,27 +1,27 @@
-Info: ili2ofgdb-5.5.2-SNAPSHOT-55d4919f666f13bfa7968e82ed4a488233eb168c
+Info: ili2ofgdb-5.5.2-SNAPSHOT-3c01d6a69f0bd8bb33cffef53efa3a50556224bd
 Info: ili2c-5.6.8-e6f7ab6dd5cdba29afc9b24866ecb98c057d82b2
 Info: iox-ili-1.24.4-8e966a086a72e7e2990a312b1229ee5878fd5994
 Info: java.version 25
 Info: user.name <stefan>
 Info: maxMemory 524288 KB
-Info: currentTime 2026-02-15 11:53:09
-Info: dburl <jdbc:ili2ofgdb:test/data/MultiLine/MultiLine.gdb>
+Info: currentTime 2026-02-25 12:02:09
+Info: dburl <jdbc:ili2ofgdb:build/test-ofgdb/SimpleOfgdbTest.gdb>
 Info: dbusr <>
 Info: databaseProduct <ESRI FileGDB API>
 Info: databaseVersion <1.5>
 Info: driverName <openfgdb4j>
-Info: driverVersion <openfgdb4j>
+Info: driverVersion <0.1>
 Info: max active DB statements <0>
 Info: compile models...
-Info: lookup model <MultiLine2> 2.3 in repository <jdbc:ili2ofgdb:test/data/MultiLine/MultiLine.gdb/>
-Info: ilifile </Users/stefan/.ilicache/jdbc&003aili2ofgdb&003atest/data/MultiLine/MultiLine.gdb/MultiLine2.ili>
+Info: lookup model <Simple23> 2.3 in repository <jdbc:ili2ofgdb:build/test-ofgdb/SimpleOfgdbTest.gdb/>
+Info: ilifile </Users/stefan/.ilicache/jdbc&003aili2ofgdb&003abuild/test-ofgdb/SimpleOfgdbTest.gdb/Simple23.ili>
 Info: process data...
 Info: data <test/data/Simple/Simple23a-out.xtf>
 Info: assume unknown external objects
 Info: first validation pass...
-Info: MultiLine2.TestA BID <3>...
-Info: MultiLine2.TestA.ClassA1...
+Info: Simple23.TestA BID <3>...
+Info: Simple23.TestA.ClassA1...
 Info: second validation pass...
-Info: Simple23a-out.xtf: MultiLine2.TestA BID=3
-Info:       1 objects in CLASS MultiLine2.TestA.ClassA1
+Info: Simple23a-out.xtf: Simple23.TestA BID=3
+Info:       1 objects in CLASS Simple23.TestA.ClassA1
 Info: ...export done

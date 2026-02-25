@@ -195,6 +195,10 @@ public class GeneratorOfgdb implements Generator {
     }
 
     private String toSqlType(DbColumn column) {
+        if (column.getArraySize() != DbColumn.NOT_AN_ARRAY) {
+            // ARRAY_TRAFO_COALESCE values are serialized as JSON text.
+            return "VARCHAR(4096)";
+        }
         if (column instanceof DbColBoolean) {
             return "SMALLINT";
         }
@@ -240,17 +244,30 @@ public class GeneratorOfgdb implements Generator {
     private String toGeometrySqlType(DbColGeometry column) {
         String kind;
         int type = column.getType();
-        if (type == DbColGeometry.POINT || type == DbColGeometry.MULTIPOINT) {
+        if (type == DbColGeometry.POINT) {
             kind = "POINT";
-        } else if (type == DbColGeometry.LINESTRING || type == DbColGeometry.CIRCULARSTRING
-                || type == DbColGeometry.COMPOUNDCURVE || type == DbColGeometry.MULTILINESTRING
-                || type == DbColGeometry.MULTICURVE) {
+        } else if (type == DbColGeometry.MULTIPOINT) {
+            kind = "MULTIPOINT";
+        } else if (type == DbColGeometry.LINESTRING) {
             kind = "LINE";
-        } else if (type == DbColGeometry.POLYGON || type == DbColGeometry.CURVEPOLYGON
-                || type == DbColGeometry.MULTIPOLYGON || type == DbColGeometry.MULTISURFACE
+        } else if (type == DbColGeometry.CIRCULARSTRING) {
+            kind = "CIRCULARSTRING";
+        } else if (type == DbColGeometry.COMPOUNDCURVE) {
+            kind = "COMPOUNDCURVE";
+        } else if (type == DbColGeometry.MULTILINESTRING) {
+            kind = "MULTILINE";
+        } else if (type == DbColGeometry.MULTICURVE) {
+            kind = "MULTICURVE";
+        } else if (type == DbColGeometry.POLYGON
                 || type == DbColGeometry.POLYHEDRALSURFACE || type == DbColGeometry.TIN
                 || type == DbColGeometry.TRIANGLE) {
             kind = "POLYGON";
+        } else if (type == DbColGeometry.CURVEPOLYGON) {
+            kind = "CURVEPOLYGON";
+        } else if (type == DbColGeometry.MULTIPOLYGON) {
+            kind = "MULTIPOLYGON";
+        } else if (type == DbColGeometry.MULTISURFACE) {
+            kind = "MULTISURFACE";
         } else if (type == DbColGeometry.GEOMETRYCOLLECTION) {
             throw new IllegalArgumentException("Unsupported geometry type GEOMETRYCOLLECTION for OFGDB geometry column "
                     + column.getName());

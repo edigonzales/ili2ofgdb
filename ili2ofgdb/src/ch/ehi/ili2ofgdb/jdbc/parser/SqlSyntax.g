@@ -99,10 +99,14 @@ statement
                            		stmt.addCond(new ColRef(w0.getLocalName()),v0);
                        		}
                        		))
-                           ("AND" w1=sqlqname EQUALS QUESTION 
-                       		{
-                           		stmt.addCond(new ColRef(w1.getLocalName()),new Param(paramIdx++));
-                       		}
+                           ("AND" w1=sqlqname EQUALS (
+	                       			(QUESTION {v0=new Param(paramIdx++);})
+	                       			| (n1:NUMBER {v0=new IntConst(Integer.valueOf(n1.getText()));})
+	                       			| (s1:STRING {v0=new StringConst(s1.getText());})
+	                       		)
+	                       		{
+	                           		stmt.addCond(new ColRef(w1.getLocalName()),v0);
+	                       		}
                            )*
                        )?                       
                        
@@ -385,5 +389,4 @@ NAME   options { testLiterals = true; }
   :  (LETTER | '_' )
      ( LETTER | '_' | DIGIT )*
   ;
-
 

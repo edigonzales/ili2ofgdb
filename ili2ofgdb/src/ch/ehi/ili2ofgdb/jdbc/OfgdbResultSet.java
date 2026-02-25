@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 public class OfgdbResultSet extends AbstractResultSet {
+    private static final String BYTE_LITERAL_PREFIX = "__OFGDB_BYTES_B64__:";
     private final List<Map<String, Object>> rows;
     private final List<String> columns;
     private int rowIndex = -1;
@@ -135,6 +136,18 @@ public class OfgdbResultSet extends AbstractResultSet {
     }
 
     @Override
+    public byte[] getBytes(int columnIndex) throws SQLException {
+        Object value = getObject(columnIndex);
+        return asBytes(value, "column " + columnIndex);
+    }
+
+    @Override
+    public byte[] getBytes(String columnLabel) throws SQLException {
+        Object value = getObject(columnLabel);
+        return asBytes(value, "column " + columnLabel);
+    }
+
+    @Override
     public boolean wasNull() throws SQLException {
         return lastGetWasNull;
     }
@@ -154,5 +167,26 @@ public class OfgdbResultSet extends AbstractResultSet {
         if (closed) {
             throw new SQLException("result set is closed");
         }
+    }
+
+    private static byte[] asBytes(Object value, String column) throws SQLException {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof byte[]) {
+            return (byte[]) value;
+        }
+        if (value instanceof String) {
+            String text = (String) value;
+            if (text.startsWith(BYTE_LITERAL_PREFIX)) {
+                String b64 = text.substring(BYTE_LITERAL_PREFIX.length());
+                try {
+                    return java.util.Base64.getDecoder().decode(b64);
+                } catch (IllegalArgumentException e) {
+                    throw new SQLException("invalid binary literal in " + column, e);
+                }
+            }
+        }
+        throw new SQLException("expected binary value in " + column + " but got " + value.getClass().getName());
     }
 }

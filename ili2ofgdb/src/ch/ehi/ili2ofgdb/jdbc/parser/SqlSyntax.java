@@ -299,9 +299,42 @@ public SqlSyntax(ParserSharedInputState state) {
 					match(LITERAL_AND);
 					w1=sqlqname();
 					match(EQUALS);
-					match(QUESTION);
+					{
+					switch ( LA(1)) {
+					case QUESTION:
+					{
+						{
+						match(QUESTION);
+						v0=new Param(paramIdx++);
+						}
+						break;
+					}
+					case NUMBER:
+					{
+						{
+						n = LT(1);
+						match(NUMBER);
+						v0=new IntConst(Integer.valueOf(n.getText()));
+						}
+						break;
+					}
+					case STRING:
+					{
+						{
+						s = LT(1);
+						match(STRING);
+						v0=new StringConst(s.getText());
+						}
+						break;
+					}
+					default:
+					{
+						throw new NoViableAltException(LT(1), getFilename());
+					}
+					}
+					}
 					
-							stmt.addCond(new ColRef(w1.getLocalName()),new Param(paramIdx++));
+							stmt.addCond(new ColRef(w1.getLocalName()),v0);
 							
 				}
 				else {

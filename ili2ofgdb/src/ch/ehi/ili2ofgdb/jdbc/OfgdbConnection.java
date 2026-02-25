@@ -17,6 +17,7 @@ import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -98,27 +99,86 @@ public class OfgdbConnection implements Connection {
         if (probe == null || probe.isEmpty()) {
             return tableName;
         }
-        String resolved = findKnownTableName(probe);
+        List<String> probeCandidates = buildProbeCandidates(probe);
+        String resolved = findKnownTableName(probeCandidates);
         if (resolved != null) {
             return resolved;
         }
         refreshKnownTableNames();
-        resolved = findKnownTableName(probe);
+        resolved = findKnownTableName(probeCandidates);
         return resolved != null ? resolved : probe;
     }
 
-    private synchronized String findKnownTableName(String probe) {
-        for (String known : knownTables) {
-            if (known.equals(probe)) {
-                return known;
+    private synchronized String findKnownTableName(List<String> probes) {
+        for (String probe : probes) {
+            for (String known : knownTables) {
+                if (known.equals(probe)) {
+                    return known;
+                }
             }
         }
-        for (String known : knownTables) {
-            if (known.equalsIgnoreCase(probe)) {
-                return known;
+        for (String probe : probes) {
+            for (String known : knownTables) {
+                if (known.equalsIgnoreCase(probe)) {
+                    return known;
+                }
             }
         }
         return null;
+    }
+
+    private static List<String> buildProbeCandidates(String probe) {
+        LinkedHashSet<String> probes = new LinkedHashSet<String>();
+        probes.add(probe);
+        List<String> identifierParts = splitIdentifierParts(probe);
+        if (identifierParts.size() > 1) {
+            for (int i = 1; i < identifierParts.size(); i++) {
+                String suffix = joinParts(identifierParts, i);
+                if (!suffix.isEmpty()) {
+                    probes.add(suffix);
+                }
+            }
+        }
+        return new ArrayList<String>(probes);
+    }
+
+    private static String joinParts(List<String> parts, int startIdx) {
+        StringBuilder ret = new StringBuilder();
+        String sep = "";
+        for (int i = startIdx; i < parts.size(); i++) {
+            String part = normalizeIdentifier(parts.get(i));
+            if (part == null || part.isEmpty()) {
+                continue;
+            }
+            ret.append(sep).append(part);
+            sep = ".";
+        }
+        return ret.toString();
+    }
+
+    private static List<String> splitIdentifierParts(String identifier) {
+        ArrayList<String> parts = new ArrayList<String>();
+        if (identifier == null || identifier.isEmpty()) {
+            return parts;
+        }
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < identifier.length(); i++) {
+            char c = identifier.charAt(i);
+            if (c == '"') {
+                inQuotes = !inQuotes;
+                current.append(c);
+            } else if (c == '.' && !inQuotes) {
+                parts.add(current.toString().trim());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        if (current.length() > 0) {
+            parts.add(current.toString().trim());
+        }
+        return parts;
     }
 
     private static String normalizeIdentifier(String identifier) {

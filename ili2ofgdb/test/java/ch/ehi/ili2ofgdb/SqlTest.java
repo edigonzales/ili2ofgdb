@@ -153,5 +153,31 @@ public class SqlTest {
             }
         }
     }
-	
+
+    @Test
+    public void testQualifiedModelTableName() throws Exception {
+        importXtf();
+        Class driverClass = Class.forName(OfgdbDriver.class.getName());
+        Connection conn = DriverManager.getConnection(
+                OfgdbDriver.BASE_URL+FGDBFILENAME, null, null);
+        java.sql.Statement stmt = null;
+        java.sql.ResultSet rs = null;
+        try {
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery("SELECT T_Id FROM Simple.classa1 WHERE T_Ili_Tid='o2'");
+            assertTrue(rs.next());
+            assertEquals(5, rs.getInt(1));
+        } finally {
+            if (rs != null) {
+                rs.close();
+            }
+            if (stmt != null) {
+                stmt.close();
+            }
+            if (conn != null) {
+                conn.close();
+            }
+        }
+    }
+
 }

@@ -76,9 +76,13 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 		}
 		throw new ConverterException("expected binary value for "+sqlAttrName+" but got "+value.getClass().getName());
 	}
-	
+
 	@Override
 	public String getInsertValueWrapperCoord(String wkfValue,int srid) {
+		return wkfValue;
+	}
+	@Override
+	public String getInsertValueWrapperMultiCoord(String wkfValue,int srid) {
 		return wkfValue;
 	}
 	@Override
@@ -113,6 +117,10 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 	}
 	@Override
 	public String getSelectValueWrapperCoord(String dbNativeValue) {
+		return dbNativeValue;
+	}
+	@Override
+	public String getSelectValueWrapperMultiCoord(String dbNativeValue) {
 		return dbNativeValue;
 	}
 	@Override
@@ -204,7 +212,20 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			return null;
 		}
 		@Override
-		public java.lang.Object fromIomPolyline(IomObject value, int srsid,boolean is3D,double p)
+		public java.lang.Object fromIomMultiCoord(IomObject value, int srsid,boolean is3D)
+			throws SQLException, ConverterException {
+			if(value!=null){
+				Iox2wkb conv=new Iox2wkb(is3D?3:2);
+				try {
+					return conv.multicoord2wkb(value);
+				} catch (Iox2wkbException ex) {
+					throw new ConverterException(ex);
+				}
+			}
+			return null;
+		}
+		@Override
+	public java.lang.Object fromIomPolyline(IomObject value, int srsid,boolean is3D,double p)
 			throws SQLException, ConverterException {
 			if(value!=null){
 				Iox2wkb conv=new Iox2wkb(is3D?3:2);
@@ -217,7 +238,7 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			return null;
 		}
 		@Override
-		public java.lang.Object fromIomMultiPolyline(IomObject value, int srsid,boolean is3D,double p)
+	public java.lang.Object fromIomMultiPolyline(IomObject value, int srsid,boolean is3D,double p)
 			throws SQLException, ConverterException {
 			if(value!=null){
 				Iox2wkb conv=new Iox2wkb(is3D?3:2);
@@ -246,6 +267,23 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 					throw new ConverterException(e);
 				}
 			}
+		@Override
+		public IomObject toIomMultiCoord(
+			Object geomobj,
+			String sqlAttrName,
+			boolean is3D)
+			throws SQLException, ConverterException {
+			byte bv[]=asBytes(geomobj,sqlAttrName);
+			if(bv==null){
+				return null;
+			}
+			Wkb2iox conv=new Wkb2iox();
+			try {
+				return conv.read(bv);
+			} catch (ParseException e) {
+				throw new ConverterException(e);
+			}
+		}
 		@Override
 			public IomObject toIomSurface(
 				Object geomobj,

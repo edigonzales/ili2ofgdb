@@ -15,11 +15,10 @@ if(!JavaVersion.current().isJava8()){
 compileJava.options.encoding = 'US-ASCII'
 
 
-// to get the latest SNAPSHOT uncomment the following lines
-//configurations.all {
-    // check for updates every build
-    //resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-//}
+// Always re-check changing modules (e.g. -SNAPSHOT) on every build.
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
 
 
 repositories {
@@ -57,6 +56,7 @@ def docs_pwd = System.getProperty('docs_pwd',properties.get('docs_pwd','docs_pwd
 def docs_usr = System.getProperty('docs_usr',properties.get('docs_usr','docs_usr'))
 def openfgdb4jGroup = System.getProperty('openfgdb4jGroup', properties.get('openfgdb4jGroup', 'ch.so.agi'))
 def openfgdb4jVersion = System.getProperty('openfgdb4jVersion', properties.get('openfgdb4jVersion', '0.1.0-SNAPSHOT'))
+def openfgdb4jIsSnapshot = openfgdb4jVersion.toString().endsWith('-SNAPSHOT')
 def sogeoSnapshotsUrl = System.getProperty('sogeoSnapshotsUrl') ?:
 	findProperty('sogeoSnapshotsUrl') ?:
 	properties.get('sogeoSnapshotsUrl', 'https://jars.sogeo.services/snapshots')
@@ -434,9 +434,9 @@ dependencies {
 	ili2fgdbImplementation group: 'ch.ehi', name: 'fgdb4j', version: "1.1.1"
 	ili2fgdbImplementation "antlr:antlr:2.7.7" 	
 	compileOnly group: 'ch.ehi', name: 'fgdb4j', version: "1.1.1" // add as compileOnly, so that eclipse sees it
-    ili2ofgdbImplementation group: openfgdb4jGroup, name: 'openfgdb4j-api', version: openfgdb4jVersion
-    compileOnly group: openfgdb4jGroup, name: 'openfgdb4j-api', version: openfgdb4jVersion
-	ili2ofgdbRuntimeOnly group: openfgdb4jGroup, name: 'openfgdb4j-natives', version: openfgdb4jVersion
+    ili2ofgdbImplementation(group: openfgdb4jGroup, name: 'openfgdb4j-api', version: openfgdb4jVersion, changing: openfgdb4jIsSnapshot)
+    compileOnly(group: openfgdb4jGroup, name: 'openfgdb4j-api', version: openfgdb4jVersion, changing: openfgdb4jIsSnapshot)
+	ili2ofgdbRuntimeOnly(group: openfgdb4jGroup, name: 'openfgdb4j-natives', version: openfgdb4jVersion, changing: openfgdb4jIsSnapshot)
 	ili2ofgdbImplementation "antlr:antlr:2.7.7"
 	ili2mssqlImplementation group: 'com.microsoft.sqlserver', name: 'mssql-jdbc', version: '6.4.0.jre7'
 	ili2oraImplementation files('libs/ojdbc14.jar')

@@ -40,6 +40,9 @@ public class OfgdbStatement implements Statement {
             "(?is)^\\s*SELECT\\s+(.+?)\\s+FROM\\s+((?:\"[^\"]+\"|[A-Za-z0-9_.$]+))(?:\\s+WHERE\\s+(.+?))?(?:\\s+ORDER\\s+BY\\s+(.+?))?\\s*$");
     private static final Pattern CREATE_TABLE_PATTERN = Pattern.compile("(?is)^\\s*CREATE\\s+TABLE\\s+([A-Za-z0-9_.$\"]+)\\s*\\(.*$");
     private static final Pattern DROP_TABLE_PATTERN = Pattern.compile("(?is)^\\s*DROP\\s+TABLE\\s+([A-Za-z0-9_.$\"]+)\\s*$");
+    private static final Pattern SIMPLE_IDENTIFIER_PATTERN = Pattern.compile("(?i)^\"?[A-Za-z_][A-Za-z0-9_$]*\"?(?:\\.\"?[A-Za-z_][A-Za-z0-9_$]*\"?)*$");
+    private static final Pattern QUALIFIED_IDENTIFIER_PATTERN = Pattern.compile(
+            "(?:\"([^\"]+)\"|([A-Za-z_][A-Za-z0-9_$]*))\\.(?:\"([^\"]+)\"|([A-Za-z_][A-Za-z0-9_$]*))");
 
     private final OfgdbConnection conn;
     private boolean closed = false;
@@ -72,7 +75,7 @@ public class OfgdbStatement implements Statement {
             updateCount = 0;
             return updateCount;
         } catch (OpenFgdbException e) {
-            throw new SQLException("failed to execute update", e);
+            throw new SQLException("failed to execute update <" + sql + ">", e);
         }
     }
 
@@ -463,10 +466,11 @@ public class OfgdbStatement implements Statement {
                 resolvedTableName = conn.resolveTableName(tableName);
                 tableHandle = api.openTable(conn.getDbHandle(), resolvedTableName);
             }
+            List<String> tableColumns = api.getFieldNames(tableHandle);
             String effectiveFieldSpec = fieldSpec;
             List<String> fetchColumns = new ArrayList<String>();
             if ("*".equals(fieldSpec)) {
-                fetchColumns = api.getFieldNames(tableHandle);
+                fetchColumns.addAll(tableColumns);
                 effectiveFieldSpec = joinColumns(fetchColumns);
                 if (requestedColumns != null && !requestedColumns.isEmpty()) {
                     columns.addAll(requestedColumns);
@@ -479,7 +483,8 @@ public class OfgdbStatement implements Statement {
                     columns.addAll(fetchColumns);
                 }
             } else {
-                fetchColumns.addAll(splitColumns(fieldSpec));
+                fetchColumns.addAll(canonicalizeColumns(splitColumns(fieldSpec), tableColumns));
+                effectiveFieldSpec = joinColumns(fetchColumns);
                 if (requestedColumns != null && !requestedColumns.isEmpty()) {
                     columns.addAll(requestedColumns);
                 } else {
@@ -566,6 +571,48 @@ public class OfgdbStatement implements Statement {
         return columns;
     }
 
+    private static List<String> canonicalizeColumns(List<String> requestedColumns, List<String> availableColumns) throws SQLException {
+        List<String> resolved = new ArrayList<String>();
+        for (String requested : requestedColumns) {
+            String canonical = canonicalizeColumnName(requested, availableColumns);
+            if (canonical == null || canonical.isEmpty()) {
+                continue;
+            }
+            if (!containsIgnoreCase(resolved, canonical)) {
+                resolved.add(canonical);
+            }
+        }
+        return resolved;
+    }
+
+    private static String canonicalizeColumnName(String requested, List<String> availableColumns) throws SQLException {
+        if (requested == null) {
+            return null;
+        }
+        String normalized = requested.trim();
+        if (normalized.isEmpty()) {
+            return normalized;
+        }
+        if (availableColumns == null || availableColumns.isEmpty()) {
+            return normalized;
+        }
+        if (!isSimpleColumnReference(normalized)) {
+            return normalized;
+        }
+        String probe = normalizeColumn(normalized);
+        for (String available : availableColumns) {
+            if (available.equals(probe)) {
+                return available;
+            }
+        }
+        for (String available : availableColumns) {
+            if (available.equalsIgnoreCase(probe)) {
+                return available;
+            }
+        }
+        throw new SQLException("unknown column " + probe);
+    }
+
     private static String buildWhereClause(List<java.util.Map.Entry<Value, Value>> conditions) {
         if (conditions == null || conditions.isEmpty()) {
             return "";
@@ -642,18 +689,23 @@ public class OfgdbStatement implements Statement {
         if (!matcher.matches()) {
             throw new SQLException("Only simple SELECT statements are supported");
         }
-        String fieldSpec = matcher.group(1).trim();
+        String rawFieldSpec = matcher.group(1).trim();
         String table = normalizeTableIdentifier(matcher.group(2).trim());
-        String where = matcher.group(3) != null ? matcher.group(3).trim() : "";
+        String where = normalizeWhereClause(matcher.group(3) != null ? matcher.group(3).trim() : "");
         String orderBy = matcher.group(4) != null ? matcher.group(4).trim() : "";
 
+        String fieldSpec = rawFieldSpec;
         List<String> columns = new ArrayList<String>();
-        if (!"*".equals(fieldSpec)) {
-            String[] parts = fieldSpec.split(",");
+        if (!"*".equals(rawFieldSpec)) {
+            List<String> fetchColumns = new ArrayList<String>();
+            String[] parts = rawFieldSpec.split(",");
             for (String part : parts) {
+                String fetchColumn = normalizeSelectExpression(part);
                 String col = normalizeColumn(part);
+                fetchColumns.add(fetchColumn);
                 columns.add(col);
             }
+            fieldSpec = joinColumns(fetchColumns);
         }
         return new QueryPlan(table, fieldSpec, where, orderBy, columns);
     }
@@ -681,19 +733,103 @@ public class OfgdbStatement implements Statement {
     }
 
     private static String normalizeColumn(String raw) {
-        String col = raw.trim();
-        int asIdx = col.toUpperCase(Locale.ROOT).indexOf(" AS ");
-        if (asIdx > 0) {
-            col = col.substring(0, asIdx).trim();
-        }
-        int spaceIdx = col.indexOf(' ');
-        if (spaceIdx > 0) {
-            col = col.substring(0, spaceIdx);
-        }
+        String col = stripAlias(raw);
         if (col.contains(".")) {
             col = col.substring(col.lastIndexOf('.') + 1);
         }
+        if (col.length() >= 2 && col.startsWith("\"") && col.endsWith("\"")) {
+            col = col.substring(1, col.length() - 1);
+        }
         return col;
+    }
+
+    private static String normalizeSelectExpression(String raw) {
+        String expression = stripAlias(raw);
+        if (isSimpleColumnReference(expression)) {
+            return normalizeColumn(expression);
+        }
+        return expression;
+    }
+
+    private static String stripAlias(String raw) {
+        String col = raw != null ? raw.trim() : "";
+        int asIdx = col.toUpperCase(Locale.ROOT).indexOf(" AS ");
+        if (asIdx > 0) {
+            return col.substring(0, asIdx).trim();
+        }
+        int spaceIdx = col.indexOf(' ');
+        if (spaceIdx > 0) {
+            String suffix = col.substring(spaceIdx + 1).trim();
+            if (!suffix.isEmpty()) {
+                char first = suffix.charAt(0);
+                if (Character.isLetter(first) || first == '_' || first == '"') {
+                    return col.substring(0, spaceIdx).trim();
+                }
+            }
+        }
+        return col;
+    }
+
+    private static boolean isSimpleColumnReference(String expression) {
+        if (expression == null) {
+            return false;
+        }
+        return SIMPLE_IDENTIFIER_PATTERN.matcher(expression.trim()).matches();
+    }
+
+    private static String normalizeWhereClause(String whereClause) {
+        if (whereClause == null || whereClause.isEmpty()) {
+            return "";
+        }
+        StringBuilder out = new StringBuilder();
+        StringBuilder outsideLiteral = new StringBuilder();
+        boolean inLiteral = false;
+        for (int i = 0; i < whereClause.length(); i++) {
+            char c = whereClause.charAt(i);
+            if (c == '\'') {
+                if (!inLiteral) {
+                    out.append(normalizeQualifiedIdentifiers(outsideLiteral.toString()));
+                    outsideLiteral.setLength(0);
+                    out.append(c);
+                    inLiteral = true;
+                } else if (i + 1 < whereClause.length() && whereClause.charAt(i + 1) == '\'') {
+                    out.append("''");
+                    i++;
+                } else {
+                    out.append(c);
+                    inLiteral = false;
+                }
+            } else if (inLiteral) {
+                out.append(c);
+            } else {
+                outsideLiteral.append(c);
+            }
+        }
+        if (outsideLiteral.length() > 0) {
+            out.append(normalizeQualifiedIdentifiers(outsideLiteral.toString()));
+        }
+        return out.toString();
+    }
+
+    private static String normalizeQualifiedIdentifiers(String input) {
+        String current = input;
+        while (true) {
+            Matcher matcher = QUALIFIED_IDENTIFIER_PATTERN.matcher(current);
+            StringBuffer rewritten = new StringBuffer();
+            boolean changed = false;
+            while (matcher.find()) {
+                String column = matcher.group(3) != null ? matcher.group(3) : matcher.group(4);
+                String replacement = matcher.group(3) != null ? "\"" + column + "\"" : column;
+                matcher.appendReplacement(rewritten, Matcher.quoteReplacement(replacement));
+                changed = true;
+            }
+            matcher.appendTail(rewritten);
+            String next = rewritten.toString();
+            if (!changed || next.equals(current)) {
+                return next;
+            }
+            current = next;
+        }
     }
 
     private static String joinColumns(List<String> columns) {
@@ -850,26 +986,16 @@ public class OfgdbStatement implements Statement {
             }
         }
         try {
-            Integer intValue = api.rowGetInt32(rowHandle, column);
-            if (intValue != null) {
-                return intValue;
+            String textValue = api.rowGetString(rowHandle, column);
+            if (textValue != null) {
+                return parseValue(textValue);
             }
         } catch (OpenFgdbException e) {
             if (!isTypeMismatch(e)) {
                 throw e;
             }
         }
-        try {
-            Double doubleValue = api.rowGetDouble(rowHandle, column);
-            if (doubleValue != null) {
-                return doubleValue;
-            }
-        } catch (OpenFgdbException e) {
-            if (!isTypeMismatch(e)) {
-                throw e;
-            }
-        }
-        return parseValue(api.rowGetString(rowHandle, column));
+        return null;
     }
 
     private static boolean isTypeMismatch(OpenFgdbException ex) {

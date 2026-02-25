@@ -4,6 +4,7 @@ import org.junit.Ignore;
 
 import ch.ehi.ili2db.AbstractTestSetup;
 import ch.ehi.ili2db.Ili2dbAssert;
+import ch.interlis.iox_j.wkb.Wkb2iox;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -12,7 +13,6 @@ import java.sql.Statement;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 @Ignore("openfgdb4j backend parity gap: SQL function coverage, metadata visibility, and geometry handling differ from ili2pg/ili2gpkg")
 public class MultiCrs24OfgdbTest extends ch.ehi.ili2db.MultiCrs24Test {
@@ -51,15 +51,15 @@ public class MultiCrs24OfgdbTest extends ch.ehi.ili2db.MultiCrs24Test {
                 "MULTIPOLYLINE {polyline [POLYLINE {sequence SEGMENTS {segment [COORD {C1 480000.0, C2 70000.0}, COORD {C1 490000.0, C2 80000.0}]}}, POLYLINE {sequence SEGMENTS {segment [COORD {C1 480000.0, C2 70000.0}, COORD {C1 490000.0, C2 80000.0}]}}]}"
         };
 
-        Ofgdb2iox ofgdb2iox = new Ofgdb2iox();
+        Wkb2iox wkb2iox = new Wkb2iox();
 
         for (int i = 0; i < queries.length; i++) {
             ResultSet rs = statement.executeQuery(queries[i]);
             assertTrue(rs.next());
-            assertEquals(entry1[i], geomToString(ofgdb2iox, rs));
+            assertEquals(entry1[i], geomToString(wkb2iox, rs));
 
             assertTrue(rs.next());
-            assertEquals(entry2[i], geomToString(ofgdb2iox, rs));
+            assertEquals(entry2[i], geomToString(wkb2iox, rs));
         }
     }
 
@@ -90,14 +90,11 @@ public class MultiCrs24OfgdbTest extends ch.ehi.ili2db.MultiCrs24Test {
         Ili2dbAssert.assertTrafoTableFromGpkg(jdbcConnection, expectedValues);
     }
 
-    private static String geomToString(Ofgdb2iox ofgdb2iox, ResultSet rs) throws Exception {
-        Object value = rs.getObject(1);
+    private static String geomToString(Wkb2iox wkb2iox, ResultSet rs) throws Exception {
+        byte[] value = rs.getBytes(1);
         if (value == null) {
             return null;
         }
-        if (!(value instanceof byte[])) {
-            fail("expected binary value in geometry column but got " + value.getClass().getName());
-        }
-        return ofgdb2iox.read((byte[]) value).toString();
+        return wkb2iox.read(value).toString();
     }
 }
