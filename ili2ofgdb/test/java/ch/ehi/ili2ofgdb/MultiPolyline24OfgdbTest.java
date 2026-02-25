@@ -16,7 +16,6 @@ import ch.interlis.iox.ObjectEvent;
 import ch.interlis.iox.StartBasketEvent;
 import ch.interlis.iox.StartTransferEvent;
 import ch.interlis.iox_j.jts.Iox2jts;
-import ch.interlis.iox_j.wkb.Wkb2iox;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.MultiLineString;
 import org.junit.Test;
@@ -42,7 +41,7 @@ public class MultiPolyline24OfgdbTest extends ch.ehi.ili2db.MultiPolyline24Test 
     @Override
     protected void assertMultiPolyline24_classa1_geomattr1(Statement stmt) throws Exception {
         ResultSet rs = stmt.executeQuery("SELECT geomattr1 FROM " + setup.prefixName("classa1"));
-        Wkb2iox wkb2iox = new Wkb2iox();
+        OfgdbWkb2iox wkb2iox = new OfgdbWkb2iox();
 
         while (rs.next()) {
             byte[] value = rs.getBytes(1);

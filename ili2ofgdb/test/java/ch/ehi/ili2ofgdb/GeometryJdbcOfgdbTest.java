@@ -4,7 +4,6 @@ import ch.ehi.ili2db.AbstractTestSetup;
 import ch.ehi.ili2db.base.Ili2db;
 import ch.ehi.ili2db.gui.Config;
 import ch.interlis.iom.IomObject;
-import ch.interlis.iox_j.wkb.Wkb2iox;
 import org.junit.Test;
 
 import java.io.File;
@@ -51,7 +50,7 @@ public class GeometryJdbcOfgdbTest {
             assertNotNull(value);
             assertTrue(value.length > 0);
             assertTrue(rs.getObject(1) instanceof byte[]);
-            IomObject geom = new Wkb2iox().read(value);
+            IomObject geom = new OfgdbWkb2iox().read(value);
             assertEquals("MULTIPOLYLINE", geom.getobjecttag());
         }
     }

@@ -34,7 +34,6 @@ import com.vividsolutions.jts.io.ParseException;
 import ch.interlis.iom.IomObject;
 import ch.interlis.iox_j.wkb.Iox2wkb;
 import ch.interlis.iox_j.wkb.Iox2wkbException;
-import ch.interlis.iox_j.wkb.Wkb2iox;
 import net.iharder.Base64;
 
 public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
@@ -260,7 +259,7 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 				if(bv==null){
 					return null;
 				}
-				Wkb2iox conv=new Wkb2iox();
+				OfgdbWkb2iox conv=new OfgdbWkb2iox();
 				try {
 					return conv.read(bv);
 				} catch (ParseException e) {
@@ -277,7 +276,7 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			if(bv==null){
 				return null;
 			}
-			Wkb2iox conv=new Wkb2iox();
+			OfgdbWkb2iox conv=new OfgdbWkb2iox();
 			try {
 				return conv.read(bv);
 			} catch (ParseException e) {
@@ -294,7 +293,7 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 				if(bv==null){
 					return null;
 				}
-				Wkb2iox conv=new Wkb2iox();
+				OfgdbWkb2iox conv=new OfgdbWkb2iox();
 				try {
 					return conv.read(bv);
 				} catch (ParseException e) {
@@ -311,7 +310,7 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			if(bv==null){
 				return null;
 			}
-			Wkb2iox conv=new Wkb2iox();
+			OfgdbWkb2iox conv=new OfgdbWkb2iox();
 			try {
 				return conv.read(bv);
 			} catch (ParseException e) {
@@ -328,7 +327,7 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 				if(bv==null){
 					return null;
 				}
-				Wkb2iox conv=new Wkb2iox();
+				OfgdbWkb2iox conv=new OfgdbWkb2iox();
 				try {
 					return conv.read(bv);
 				} catch (ParseException e) {
@@ -345,7 +344,7 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			if(bv==null){
 				return null;
 			}
-			Wkb2iox conv=new Wkb2iox();
+			OfgdbWkb2iox conv=new OfgdbWkb2iox();
 			try {
 				return conv.read(bv);
 			} catch (ParseException e) {
