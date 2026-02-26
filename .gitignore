@@ -36,6 +36,7 @@ dist/
 /test/data/BatchSize/*.log
 /test/data/Crs/*.log
 /test/data/Dataset10/*.log
+/test/data/Dataset23Smart1/*.log
 /test/data/Datatypes23/*.log
 /test/data/Documentation/*.log
 /test/data/Enum23/*.log
@@ -49,9 +50,11 @@ dist/
 /test/data/ListOfBagOfPrimTypes24/*.log
 /test/data/MetaConfig/*.log
 /test/data/MetaInfo/*.log
+/test/data/MultiLine/*.log
 /test/data/MultiCoord24/*.log
 /test/data/MultiPoint/*.log
 /test/data/MultiPolyline24/*.log
+/test/data/MultiSurface/*.log
 /test/data/MultiSurfaceArea24/*.log
 /test/data/MultilingualText/*.log
 /test/data/MultipleGeomAttrs/*.log
@@ -75,11 +78,26 @@ dist/
 /test/data/ExpandStruct/*-out.xtf
 /test/data/ExtRef/*-out.xtf
 /test/data/FetchSize/*-out.xtf
+/test/data/GenericValueRanges24/*-out.xtf
 /test/data/Json/*-out.xtf
+/test/data/MultiCoord24/*-out.xtf
+/test/data/MultiPolyline24/*-out.xtf
+/test/data/MultiSurface/*-out.xtf
+/test/data/MultiSurfaceArea24/*-out.xtf
 /test/data/MultilingualText/*-out.xtf
 /test/data/MultipleGeomAttrs/*-out.xtf
+/test/data/Simple/*-out.itf
+/test/data/Simple/*-out.xtf
 /test/data/View/*-out.xtf
 /test/data/XtfHeader/*-out.xtf
+
+# generated file geodatabase runtime folders (explicit, conservative)
+/test/data/Dataset23Smart1/Dataset23Smart1.gdb/**
+/test/data/Datatypes23/Datatypes23.gdb/**
+/test/data/MultiLine/MultiLine.gdb/**
+/test/data/MultiSurface/MultiSurface.gdb/**
+/test/data/MultipleGeomAttrs/MultipleGeomAttrs.gdb/**
+/test/data/Simple/Simple.gdb/**
 
 # generated gdb sidecars (only where observed)
 /test/data/Datatypes23/Datatypes23.gdb/*.spx

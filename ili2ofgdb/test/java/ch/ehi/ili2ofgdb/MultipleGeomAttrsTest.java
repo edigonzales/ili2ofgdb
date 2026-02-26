@@ -26,6 +26,7 @@ import ch.interlis.iox.StartBasketEvent;
 import ch.interlis.iox.StartTransferEvent;
 import ch.interlis.iox_j.jts.Iox2jts;
 
+@Ignore("legacy OFGDB test class, superseded by shared wrapper tests; retained for historical reference")
 public class MultipleGeomAttrsTest {
 	
 	private static final String TEST_OUT="test/data/MultipleGeomAttrs/";

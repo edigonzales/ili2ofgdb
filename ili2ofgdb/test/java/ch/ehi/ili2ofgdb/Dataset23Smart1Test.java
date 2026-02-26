@@ -9,6 +9,7 @@ import java.util.HashMap;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import ch.ehi.basics.logging.EhiLogger;
@@ -30,6 +31,7 @@ import ch.interlis.iox.StartBasketEvent;
 import ch.interlis.iox.StartTransferEvent;
 
 //-Ddburl=jdbc:postgresql:dbname -Ddbusr=usrname -Ddbpwd=1234
+@Ignore("legacy OFGDB test class, superseded by shared wrapper tests; retained for historical reference")
 public class Dataset23Smart1Test {
     String fgdbFileName="test/data/Dataset23Smart1/Dataset23Smart1.gdb";
 	private static final String DATASETNAME_A = "Testset1";

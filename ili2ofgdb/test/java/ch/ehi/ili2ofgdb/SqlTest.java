@@ -26,6 +26,7 @@ import ch.interlis.iox.ObjectEvent;
 import ch.interlis.iox.StartBasketEvent;
 import ch.interlis.iox.StartTransferEvent;
 
+@Ignore("legacy OFGDB test class, superseded by shared wrapper tests; retained for historical reference")
 public class SqlTest {
 	
 	private static final String TEST_OUT="test/data/Simple/";

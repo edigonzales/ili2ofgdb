@@ -6,6 +6,7 @@ import java.io.File;
 import java.sql.Connection;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Polygon;
@@ -24,6 +25,7 @@ import ch.interlis.iox.StartBasketEvent;
 import ch.interlis.iox.StartTransferEvent;
 import ch.interlis.iox_j.jts.Iox2jts;
 
+@Ignore("legacy OFGDB test class, superseded by shared wrapper tests; retained for historical reference")
 public class MultisurfaceTest {
 	
 	private static final String TEST_OUT="test/data/MultiSurface/";

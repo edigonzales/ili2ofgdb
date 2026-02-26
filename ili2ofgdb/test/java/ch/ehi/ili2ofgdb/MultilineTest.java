@@ -6,6 +6,7 @@ import java.io.File;
 import java.sql.Connection;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import ch.ehi.basics.logging.EhiLogger;
 import ch.ehi.ili2ofgdb.OfgdbTestFiles;
@@ -19,6 +20,7 @@ import ch.interlis.iox.ObjectEvent;
 import ch.interlis.iox.StartBasketEvent;
 import ch.interlis.iox.StartTransferEvent;
 
+@Ignore("legacy OFGDB test class, superseded by shared wrapper tests; retained for historical reference")
 public class MultilineTest {
 	
 	private Connection jdbcConnection=null;
