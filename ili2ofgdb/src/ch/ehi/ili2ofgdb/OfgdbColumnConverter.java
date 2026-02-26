@@ -24,9 +24,12 @@ import ch.ehi.ili2db.gui.Config;
 import ch.ehi.sqlgen.generator_impl.ofgdb.GeneratorOfgdb;
 
 import java.io.IOException;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Connection;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.sql.Types;
 
 import com.vividsolutions.jts.io.ParseException;
@@ -49,6 +52,13 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 	public void setup(Connection conn, Settings config) {
 		super.setup(conn,config);
 		strokeArcs=Config.STROKE_ARCS_ENABLE.equals(Config.getStrokeArcs(config));
+	}
+
+	private byte[] sanitizeStrokeArcs3d(byte[] wkb, boolean is3D) throws ConverterException {
+		if(wkb==null || !strokeArcs || !is3D) {
+			return wkb;
+		}
+		return OfgdbStrokeZSanitizer.sanitizeNaNZToZero(wkb);
 	}
 
 	private byte[] asBytes(Object value, String sqlAttrName) throws ConverterException {
@@ -173,7 +183,8 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 				if(value!=null){
 					Iox2wkb conv=new Iox2wkb(is3D?3:2);
 					try {
-						return conv.surface2wkb(value,!strokeArcs,p,false);
+						byte[] wkb=conv.surface2wkb(value,!strokeArcs,p,false);
+						return sanitizeStrokeArcs3d(wkb,is3D);
 					} catch (Iox2wkbException ex) {
 						throw new ConverterException(ex);
 					}
@@ -190,7 +201,8 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 				if(value!=null){
 					Iox2wkb conv=new Iox2wkb(is3D?3:2);
 					try {
-						return conv.multisurface2wkb(value,!strokeArcs,p,false);
+						byte[] wkb=conv.multisurface2wkb(value,!strokeArcs,p,false);
+						return sanitizeStrokeArcs3d(wkb,is3D);
 					} catch (Iox2wkbException ex) {
 						throw new ConverterException(ex);
 					}
@@ -229,7 +241,8 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			if(value!=null){
 				Iox2wkb conv=new Iox2wkb(is3D?3:2);
 				try {
-					return conv.polyline2wkb(value,false,!strokeArcs,p);
+					byte[] wkb=conv.polyline2wkb(value,false,!strokeArcs,p);
+					return sanitizeStrokeArcs3d(wkb,is3D);
 				} catch (Iox2wkbException ex) {
 					throw new ConverterException(ex);
 				}
@@ -242,7 +255,8 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 			if(value!=null){
 				Iox2wkb conv=new Iox2wkb(is3D?3:2);
 				try {
-					return conv.multiline2wkb(value,!strokeArcs,p);
+					byte[] wkb=conv.multiline2wkb(value,!strokeArcs,p);
+					return sanitizeStrokeArcs3d(wkb,is3D);
 				} catch (Iox2wkbException ex) {
 					throw new ConverterException(ex);
 				}
@@ -366,6 +380,24 @@ public class OfgdbColumnConverter extends AbstractWKBColumnConverter {
 		    }
 		    String s = Base64.encodeBytes(bytes);
 		    return s;
+		}
+
+		@Override
+		public void setTimestamp(PreparedStatement ps, int valuei,
+				Timestamp datetime) throws SQLException {
+			ps.setString(valuei, datetime.toString().replace('T', ' '));
+		}
+
+		@Override
+		public void setDate(PreparedStatement ps, int valuei, Date date)
+				throws SQLException {
+			ps.setString(valuei, date.toString());
+		}
+
+		@Override
+		public void setTime(PreparedStatement ps, int valuei, Time time)
+				throws SQLException {
+			ps.setString(valuei, "1970-01-01 " + time.toString());
 		}
 
 		@Override

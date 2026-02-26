@@ -65,9 +65,13 @@ public class OfgdbStatement implements Statement {
     @Override
     public int executeUpdate(String sql) throws SQLException {
         ensureOpen();
+        String normalizedSql = normalizeSelectSql(sql);
+        if (normalizedSql == null || normalizedSql.isEmpty()) {
+            throw new SQLException("empty SQL statement");
+        }
         try {
-            conn.getApi().execSql(conn.getDbHandle(), sql);
-            trackSchemaMutation(sql);
+            conn.getApi().execSql(conn.getDbHandle(), normalizedSql);
+            trackSchemaMutation(normalizedSql);
             if (currentResultSet != null) {
                 currentResultSet.close();
                 currentResultSet = null;
@@ -75,7 +79,7 @@ public class OfgdbStatement implements Statement {
             updateCount = 0;
             return updateCount;
         } catch (OpenFgdbException e) {
-            throw new SQLException("failed to execute update <" + sql + ">", e);
+            throw new SQLException("failed to execute update <" + normalizedSql + ">", e);
         }
     }
 
@@ -83,12 +87,15 @@ public class OfgdbStatement implements Statement {
     public boolean execute(String sql) throws SQLException {
         ensureOpen();
         String normalizedSql = normalizeSelectSql(sql);
+        if (normalizedSql == null || normalizedSql.isEmpty()) {
+            throw new SQLException("empty SQL statement");
+        }
         String upper = normalizedSql != null ? normalizedSql.toUpperCase(Locale.ROOT) : "";
         if (upper.startsWith("SELECT ")) {
             executeQuery(normalizedSql);
             return true;
         }
-        executeUpdate(sql);
+        executeUpdate(normalizedSql);
         return false;
     }
 

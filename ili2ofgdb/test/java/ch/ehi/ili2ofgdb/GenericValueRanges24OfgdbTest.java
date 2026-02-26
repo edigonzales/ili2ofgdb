@@ -51,12 +51,13 @@ public class GenericValueRanges24OfgdbTest extends ch.ehi.ili2db.GenericValueRan
     public void importIli() throws SQLException, Ili2dbException {
         super.importIli();
         try (java.sql.Connection conn = setup.createConnection();
-             ResultSet cols = conn.getMetaData().getColumns(null, null, setup.prefixName("classa_attrline"), null)) {
+                ResultSet cols = conn.getMetaData().getColumns(null, null, setup.prefixName("classa_attrline"), null)) {
             List<String> names = new ArrayList<String>();
             while (cols.next()) {
                 names.add(cols.getString("COLUMN_NAME"));
             }
-            assertTrue("classa_attrline must contain attrline; actual columns=" + names, containsIgnoreCase(names, "attrline"));
+            assertTrue("classa_attrline must contain attrline; actual columns=" + names,
+                    containsIgnoreCase(names, "attrline"));
         }
     }
 
@@ -77,9 +78,9 @@ public class GenericValueRanges24OfgdbTest extends ch.ehi.ili2db.GenericValueRan
 
         assertTrue(rs.next());
         MultiPoint geom = Iox2jts.multicoord2JTS(readGeom(wkb2iox, rs));
-        assertCoords(geom.getCoordinates(), new double[][]{
-                {2530001.0, 1150002.0},
-                {2740003.0, 1260004.0},
+        assertCoords(geom.getCoordinates(), new double[][] {
+                { 2530001.0, 1150002.0 },
+                { 2740003.0, 1260004.0 },
         });
         assertFalse(rs.next());
     }
@@ -95,9 +96,9 @@ public class GenericValueRanges24OfgdbTest extends ch.ehi.ili2db.GenericValueRan
         assertEquals("POLYLINE", iomGeom.getobjecttag());
         LineString geom = Iox2jts.polyline2JTSlineString(iomGeom, false, 0.0);
         Coordinate[] coords = geom.getCoordinates();
-        assertCoords(coords, new double[][]{
-                {2480000.0, 1070000.0},
-                {2490000.0, 1080000.0},
+        assertCoords(coords, new double[][] {
+                { 2480000.0, 1070000.0 },
+                { 2490000.0, 1080000.0 },
         });
         assertFalse(rs.next());
     }
@@ -110,11 +111,11 @@ public class GenericValueRanges24OfgdbTest extends ch.ehi.ili2db.GenericValueRan
         assertTrue(rs.next());
         MultiLineString geom = Iox2jts.multipolyline2JTS(readGeom(wkb2iox, rs), 0.0);
         assertEquals(2, geom.getNumGeometries());
-        assertCoords(geom.getCoordinates(), new double[][]{
-                {2480000.0, 1070000.0},
-                {2490000.0, 1080000.0},
-                {2480000.0, 1070000.0},
-                {2490000.0, 1080000.0},
+        assertCoords(geom.getCoordinates(), new double[][] {
+                { 2480000.0, 1070000.0 },
+                { 2490000.0, 1080000.0 },
+                { 2480000.0, 1070000.0 },
+                { 2490000.0, 1080000.0 },
         });
         assertFalse(rs.next());
     }
@@ -165,7 +166,7 @@ public class GenericValueRanges24OfgdbTest extends ch.ehi.ili2db.GenericValueRan
             double innerMaxX,
             double innerMinY,
             double innerMaxY) throws Exception {
-        assertEquals("SURFACE", geom.getobjecttag());
+        assertEquals("MULTISURFACE", geom.getobjecttag());
         Polygon polygon = Iox2jts.surface2JTS(geom, 0.0);
         assertEquals(1, polygon.getNumInteriorRing());
         assertEnvelope(

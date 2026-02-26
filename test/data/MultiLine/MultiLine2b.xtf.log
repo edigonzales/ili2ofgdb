@@ -1,10 +1,10 @@
-Info: ili2ofgdb-5.5.2-SNAPSHOT-319b38bebf8de4ee51a924c17b605975ec948ed1
+Info: ili2ofgdb-5.5.2-SNAPSHOT-a96ad5ba1737098f321dea6e01ae9d5be3b7a458
 Info: ili2c-5.6.8-e6f7ab6dd5cdba29afc9b24866ecb98c057d82b2
 Info: iox-ili-1.24.4-8e966a086a72e7e2990a312b1229ee5878fd5994
 Info: java.version 25.0.1
 Info: user.name <stefan>
 Info: maxMemory 524288 KB
-Info: currentTime 2026-02-25 19:40:06
+Info: currentTime 2026-02-26 20:24:34
 Info: dburl <jdbc:ili2ofgdb:test/data/MultiLine/MultiLine.gdb>
 Info: dbusr <>
 Info: databaseProduct <ESRI FileGDB API>
