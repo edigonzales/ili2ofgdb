@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?><TRANSFER xmlns="http://www.interlis.ch/INTERLIS2.3">
-<HEADERSECTION SENDER="ili2ofgdb-5.5.2-SNAPSHOT-9309b009a38dbb538bb45be95ae181543c5cbab7" VERSION="2.3"><MODELS><MODEL NAME="Simple23" VERSION="2016-12-21" URI="mailto:ce@eisenhutinformatik.ch"></MODEL></MODELS></HEADERSECTION>
+<HEADERSECTION SENDER="ili2ofgdb-5.5.2-SNAPSHOT-b5fd5fce287ed799bd3ceab177c6dd4e99c32341" VERSION="2.3"><MODELS><MODEL NAME="Simple23" VERSION="2016-12-21" URI="mailto:ce@eisenhutinformatik.ch"></MODEL></MODELS></HEADERSECTION>
 <DATASECTION>
 <Simple23.TestA BID="3">
 <Simple23.TestA.ClassA1 TID="4"><attr1>gugus</attr1></Simple23.TestA.ClassA1>
