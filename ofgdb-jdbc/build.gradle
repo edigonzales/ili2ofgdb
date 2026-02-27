@@ -96,7 +96,21 @@ publishing {
             groupId = project.group
             artifactId = 'ofgdb-jdbc'
             version = project.version
-            artifact(tasks.shadowJar)
+            artifact(tasks.shadowJar) {
+                classifier = null
+            }
+            artifact(tasks.shadowJar) {
+                classifier = 'all'
+            }
+            pom.withXml {
+                def root = asNode()
+                def packagingNode = root.packaging
+                if (packagingNode == null || packagingNode.isEmpty()) {
+                    root.appendNode('packaging', 'jar')
+                } else {
+                    packagingNode[0].value = 'jar'
+                }
+            }
         }
     }
     repositories {

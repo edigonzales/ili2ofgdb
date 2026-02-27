@@ -31,13 +31,20 @@ Standalone JDBC driver for ESRI File Geodatabase based on `openfgdb4j`.
 2. Name the driver `ofgdb-jdbc`.
 3. Set Class Name to `ch.ehi.ofgdb.jdbc.OfgdbDriver`.
 4. In the driver libraries, add Maven artifact:
-   `ch.so.agi:ofgdb-jdbc:<version>:all`
+   `ch.so.agi:ofgdb-jdbc:0.1.0-SNAPSHOT`
+   (optional explicit fat-jar classifier: `ch.so.agi:ofgdb-jdbc:0.1.0-SNAPSHOT:all`)
+   If you use the artifact dialog fields, keep classifier empty for the default artifact.
 5. Ensure DBeaver can access the snapshot repository:
-   `https://jar.sogeo.services/snapshots`
+   `https://jars.sogeo.services/snapshots`
 6. Save the driver.
 7. Create a new connection with URL:
    `jdbc:ofgdb:/absolute/path/to/your.gdb`
 8. Leave user/password empty.
+
+Important:
+
+- Do not use version `RELEASE` for this artifact.
+- The artifact must already be published to the snapshot repository (for example via GitHub Action `ofgdb-jdbc-fatjar` on `main` or via `./gradlew publishOfgdbJdbcFatJarSnapshot`).
 
 ## Build
 
