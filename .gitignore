@@ -71,21 +71,30 @@ dist/
 /test/data/XtfVersion/*.log
 
 # generated exports (narrow per folder)
+/test/data/Array/*-out.xtf
 /test/data/Assoc23/*-out.xtf
+/test/data/Crs/*-out.xtf
 /test/data/Dataset10/*-out.xtf
 /test/data/Datatypes23/*-out.xtf
 /test/data/Enum23/*-out.xtf
 /test/data/ExpandStruct/*-out.xtf
 /test/data/ExtRef/*-out.xtf
 /test/data/FetchSize/*-out.xtf
+/test/data/FilterImport/*-out.xtf
 /test/data/GenericValueRanges24/*-out.xtf
 /test/data/Json/*-out.xtf
+/test/data/ListOfBagOfPrimTypes24/*-out.xtf
+/test/data/MetaConfig/*-out.xtf
 /test/data/MultiCoord24/*-out.xtf
+/test/data/MultiPoint/*-out.xtf
 /test/data/MultiPolyline24/*-out.xtf
 /test/data/MultiSurface/*-out.xtf
 /test/data/MultiSurfaceArea24/*-out.xtf
 /test/data/MultilingualText/*-out.xtf
 /test/data/MultipleGeomAttrs/*-out.xtf
+/test/data/Oid23/*-out.xtf
+/test/data/ReferenceType/*-out.xtf
+/test/data/Rounder/*-out.xtf
 /test/data/Simple/*-out.itf
 /test/data/Simple/*-out.xtf
 /test/data/View/*-out.xtf

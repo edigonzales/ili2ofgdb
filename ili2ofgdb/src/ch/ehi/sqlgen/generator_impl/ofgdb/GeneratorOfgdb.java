@@ -39,6 +39,7 @@ public class GeneratorOfgdb implements Generator {
     private Statement ddlStmt;
     private DbTable currentTable;
     private List<String> columnDefs;
+    private int geometryColumnCount;
 
     @Override
     public void visit1Begin() throws IOException {
@@ -52,12 +53,19 @@ public class GeneratorOfgdb implements Generator {
     public void visit1TableBegin(DbTable tab) throws IOException {
         currentTable = tab;
         columnDefs = new ArrayList<String>();
+        geometryColumnCount = 0;
     }
 
     @Override
     public void visit1TableEnd(DbTable tab) throws IOException {
         if (tab == null || columnDefs == null) {
             return;
+        }
+        if (geometryColumnCount > 1) {
+            throw new IOException("OFGDB supports only one geometry column per table; table "
+                    + tab.getName().getName()
+                    + " has " + geometryColumnCount
+                    + " geometry columns (enable oneGeomPerTable for OFGDB)");
         }
         StringBuilder sql = new StringBuilder();
         sql.append("CREATE TABLE ").append(tab.getName().getName()).append(" (");
@@ -74,6 +82,7 @@ public class GeneratorOfgdb implements Generator {
         }
         currentTable = null;
         columnDefs = null;
+        geometryColumnCount = 0;
     }
 
     @Override
@@ -96,6 +105,9 @@ public class GeneratorOfgdb implements Generator {
     public void visitColumn(DbTable tab, DbColumn column) throws IOException {
         if (columnDefs == null || column == null) {
             return;
+        }
+        if (column instanceof DbColGeometry) {
+            geometryColumnCount++;
         }
 
         StringBuilder def = new StringBuilder();
@@ -297,11 +309,26 @@ public class GeneratorOfgdb implements Generator {
         try {
             ddlStmt.executeUpdate(sql);
         } catch (SQLException e) {
-            if (ignoreIfExists) {
+            if (ignoreIfExists && isAlreadyExistsError(e)) {
                 EhiLogger.logAdaption("ili2ofgdb: ignored DDL error for statement <" + sql + ">: " + e.getMessage());
                 return;
             }
             throw new IOException("failed to execute DDL statement <" + sql + ">", e);
         }
+    }
+
+    private boolean isAlreadyExistsError(SQLException e) {
+        String sqlState = e.getSQLState();
+        if ("X0Y32".equals(sqlState)) {
+            return true;
+        }
+        String msg = e.getMessage();
+        if (msg == null) {
+            return false;
+        }
+        String lower = msg.toLowerCase(java.util.Locale.ROOT);
+        return lower.contains("already exists")
+                || lower.contains("exists already")
+                || lower.contains("already present");
     }
 }

@@ -213,10 +213,23 @@ public class OfgdbMapping extends AbstractJdbcMapping {
 
     @Override
     public void preConnect(String url, String dbusr, String dbpwd, Config config) {
+        enforceSingleGeometryPerTable(config);
     }
 
     @Override
     public void postConnect(Connection conn, Config config) {
+        enforceSingleGeometryPerTable(config);
+    }
+
+    private void enforceSingleGeometryPerTable(Config config) {
+        if (config == null) {
+            return;
+        }
+        if (!config.isOneGeomPerTable()) {
+            EhiLogger.logAdaption(
+                    "ili2ofgdb: forcing oneGeomPerTable=true because OpenFileGDB supports only one geometry column per table");
+        }
+        config.setOneGeomPerTable(true);
     }
 
     private void createDomains(OpenFgdb api, long dbHandle) throws OpenFgdbException {

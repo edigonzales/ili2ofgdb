@@ -3,6 +3,7 @@ package ch.ehi.ili2ofgdb.jdbc;
 import java.sql.Connection;
 import java.sql.BatchUpdateException;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
@@ -46,6 +47,8 @@ public class OfgdbStatement implements Statement {
     private static final Pattern SIMPLE_IDENTIFIER_PATTERN = Pattern.compile("(?i)^\"?[A-Za-z_][A-Za-z0-9_$]*\"?(?:\\.\"?[A-Za-z_][A-Za-z0-9_$]*\"?)*$");
     private static final Pattern QUALIFIED_IDENTIFIER_PATTERN = Pattern.compile(
             "(?:\"([^\"]+)\"|([A-Za-z_][A-Za-z0-9_$]*))\\.(?:\"([^\"]+)\"|([A-Za-z_][A-Za-z0-9_$]*))");
+    private static final Pattern UNION_DERIVED_SELECT_PATTERN = Pattern.compile(
+            "(?is)^\\s*SELECT\\s+(.+?)\\s+FROM\\s*\\((.+)\\)\\s+(?:\"?[A-Za-z_][A-Za-z0-9_$]*\"?)\\s*(?:WHERE\\s+(.+?))?\\s*$");
 
     private final OfgdbConnection conn;
     private boolean closed = false;
@@ -401,6 +404,10 @@ public class OfgdbStatement implements Statement {
 
     private ResultSet executeSelectSql(String sql) throws SQLException {
         String normalizedSql = normalizeSelectSql(sql);
+        normalizedSql = rewritePlainJoinToLeftJoin(normalizedSql);
+        if (looksLikeUnionDerivedSelect(normalizedSql)) {
+            return executeUnionDerivedSelect(normalizedSql);
+        }
         QueryPlan plan = null;
         try {
             plan = parseSelect(normalizedSql);
@@ -409,6 +416,177 @@ public class OfgdbStatement implements Statement {
             return executeSelectStmt(stmt);
         }
         return executeSimpleSelect(plan);
+    }
+
+    private ResultSet executeUnionDerivedSelect(String sql) throws SQLException {
+        UnionDerivedSelectSpec spec = parseUnionDerivedSelect(sql);
+        List<String> baseColumns = new ArrayList<String>();
+        List<Map<String, Object>> mergedRows = new ArrayList<Map<String, Object>>();
+        java.util.Set<String> dedup = new java.util.LinkedHashSet<String>();
+        for (String unionPart : splitTopLevelUnionParts(spec.unionBody)) {
+            ResultSet rs = null;
+            try {
+                rs = executeSelectSql(unionPart);
+                ResultSetMetaData md = rs.getMetaData();
+                if (baseColumns.isEmpty()) {
+                    for (int i = 1; i <= md.getColumnCount(); i++) {
+                        baseColumns.add(normalizeColumn(md.getColumnName(i)));
+                    }
+                }
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<String, Object>();
+                    for (int i = 1; i <= md.getColumnCount(); i++) {
+                        row.put(normalizeColumn(md.getColumnName(i)), rs.getObject(i));
+                    }
+                    String key = buildRowKey(row, baseColumns);
+                    if (dedup.add(key)) {
+                        mergedRows.add(row);
+                    }
+                }
+            } finally {
+                if (rs != null) {
+                    rs.close();
+                }
+            }
+        }
+        List<String> projectionColumns = spec.projectionColumns;
+        if (projectionColumns.isEmpty() || (projectionColumns.size() == 1 && "*".equals(projectionColumns.get(0)))) {
+            projectionColumns = new ArrayList<String>(baseColumns);
+        }
+        List<Map<String, Object>> outRows = new ArrayList<Map<String, Object>>();
+        for (Map<String, Object> row : mergedRows) {
+            if (!matchesSimpleWhere(row, spec.whereClause)) {
+                continue;
+            }
+            Map<String, Object> out = new HashMap<String, Object>();
+            for (String column : projectionColumns) {
+                out.put(column, getIgnoreCase(row, column));
+            }
+            outRows.add(out);
+        }
+        return new OfgdbResultSet(outRows, projectionColumns);
+    }
+
+    private static UnionDerivedSelectSpec parseUnionDerivedSelect(String sql) throws SQLException {
+        Matcher matcher = UNION_DERIVED_SELECT_PATTERN.matcher(sql);
+        if (!matcher.matches()) {
+            throw new SQLException("unsupported UNION SELECT statement");
+        }
+        UnionDerivedSelectSpec spec = new UnionDerivedSelectSpec();
+        String fieldSpec = matcher.group(1) != null ? matcher.group(1).trim() : "*";
+        if (fieldSpec.isEmpty()) {
+            fieldSpec = "*";
+        }
+        if ("*".equals(fieldSpec)) {
+            spec.projectionColumns.add("*");
+        } else {
+            for (String col : splitColumns(fieldSpec)) {
+                spec.projectionColumns.add(normalizeColumn(col));
+            }
+        }
+        spec.unionBody = matcher.group(2) != null ? matcher.group(2).trim() : "";
+        spec.whereClause = matcher.group(3) != null ? normalizeWhereClause(matcher.group(3).trim()) : "";
+        return spec;
+    }
+
+    private static List<String> splitTopLevelUnionParts(String unionBody) throws SQLException {
+        List<String> parts = new ArrayList<String>();
+        if (unionBody == null || unionBody.trim().isEmpty()) {
+            throw new SQLException("unsupported UNION SELECT statement");
+        }
+        String upper = unionBody.toUpperCase(Locale.ROOT);
+        int depth = 0;
+        int partStart = 0;
+        int i = 0;
+        while (i < unionBody.length()) {
+            char c = unionBody.charAt(i);
+            if (c == '(') {
+                depth++;
+                i++;
+                continue;
+            }
+            if (c == ')') {
+                if (depth > 0) {
+                    depth--;
+                }
+                i++;
+                continue;
+            }
+            if (depth == 0 && upper.startsWith(" UNION ", i)) {
+                String part = unionBody.substring(partStart, i).trim();
+                if (!part.isEmpty()) {
+                    parts.add(part);
+                }
+                i += " UNION ".length();
+                partStart = i;
+                continue;
+            }
+            i++;
+        }
+        String tail = unionBody.substring(partStart).trim();
+        if (!tail.isEmpty()) {
+            parts.add(tail);
+        }
+        if (parts.isEmpty()) {
+            throw new SQLException("unsupported UNION SELECT statement");
+        }
+        return parts;
+    }
+
+    private static String buildRowKey(Map<String, Object> row, List<String> columns) {
+        StringBuilder key = new StringBuilder();
+        String sep = "";
+        for (String col : columns) {
+            Object value = getIgnoreCase(row, col);
+            key.append(sep).append(col.toLowerCase(Locale.ROOT)).append('=').append(value != null ? value.toString() : "<null>");
+            sep = "|";
+        }
+        return key.toString();
+    }
+
+    private static boolean matchesSimpleWhere(Map<String, Object> row, String whereClause) throws SQLException {
+        if (whereClause == null || whereClause.trim().isEmpty()) {
+            return true;
+        }
+        String[] conditions = whereClause.split("(?i)\\s+AND\\s+");
+        for (String conditionRaw : conditions) {
+            String condition = conditionRaw != null ? conditionRaw.trim() : "";
+            if (condition.isEmpty()) {
+                continue;
+            }
+            int eqPos = condition.indexOf('=');
+            if (eqPos <= 0) {
+                throw new SQLException("unsupported WHERE condition in UNION SELECT: " + condition);
+            }
+            String left = normalizeColumn(condition.substring(0, eqPos).trim());
+            String right = condition.substring(eqPos + 1).trim();
+            Object expected = parseSqlLiteral(right);
+            Object actual = getIgnoreCase(row, left);
+            if (actual == null && expected == null) {
+                continue;
+            }
+            if (actual == null || expected == null) {
+                return false;
+            }
+            if (!actual.toString().equals(expected.toString())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static Object parseSqlLiteral(String literalText) {
+        if (literalText == null) {
+            return null;
+        }
+        String text = literalText.trim();
+        if (text.equalsIgnoreCase("NULL")) {
+            return null;
+        }
+        if (text.startsWith("'") && text.endsWith("'") && text.length() >= 2) {
+            return text.substring(1, text.length() - 1).replace("''", "'");
+        }
+        return parseValue(text);
     }
 
     private AbstractSelectStmt parseSelectStatement(String sql) throws SQLException {
@@ -839,6 +1017,31 @@ public class OfgdbStatement implements Statement {
         return normalized;
     }
 
+    private static String rewritePlainJoinToLeftJoin(String sql) {
+        if (sql == null) {
+            return null;
+        }
+        String upper = sql.toUpperCase(Locale.ROOT);
+        if (!upper.contains(" JOIN ")) {
+            return sql;
+        }
+        if (upper.contains(" LEFT JOIN ")
+                || upper.contains(" RIGHT JOIN ")
+                || upper.contains(" INNER JOIN ")
+                || upper.contains(" FULL JOIN ")
+                || upper.contains(" CROSS JOIN ")) {
+            return sql;
+        }
+        return sql.replaceAll("(?i)\\bJOIN\\b", "LEFT JOIN");
+    }
+
+    private static boolean looksLikeUnionDerivedSelect(String sql) {
+        if (sql == null) {
+            return false;
+        }
+        return UNION_DERIVED_SELECT_PATTERN.matcher(sql).matches();
+    }
+
     private static String normalizeColumn(String raw) {
         String col = stripAlias(raw);
         if (col.contains(".")) {
@@ -1074,7 +1277,7 @@ public class OfgdbStatement implements Statement {
         }
         if (trimmed.matches("-?\\d+\\.\\d+")) {
             try {
-                return Double.valueOf(trimmed);
+                return new java.math.BigDecimal(trimmed);
             } catch (NumberFormatException ignore) {
             }
         }
@@ -1146,6 +1349,12 @@ public class OfgdbStatement implements Statement {
         if (dropMatcher.matches()) {
             conn.removeTableName(normalizeTableIdentifier(dropMatcher.group(1)));
         }
+    }
+
+    private static final class UnionDerivedSelectSpec {
+        String unionBody;
+        String whereClause;
+        final List<String> projectionColumns = new ArrayList<String>();
     }
 
     private static final class QueryPlan {
