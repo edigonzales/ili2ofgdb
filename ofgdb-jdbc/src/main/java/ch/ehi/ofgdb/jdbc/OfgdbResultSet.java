@@ -2,6 +2,7 @@ package ch.ehi.ofgdb.jdbc;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -10,13 +11,27 @@ public class OfgdbResultSet extends AbstractResultSet {
     private static final String BYTE_LITERAL_PREFIX = "__OFGDB_BYTES_B64__:";
     private final List<Map<String, Object>> rows;
     private final List<String> columns;
+    private final List<Integer> jdbcTypes;
+    private final List<String> jdbcTypeNames;
+    private final boolean inferTypesFromRows;
     private int rowIndex = -1;
     private boolean closed = false;
     private boolean lastGetWasNull = false;
 
     public OfgdbResultSet(List<Map<String, Object>> rows, List<String> columns) {
+        this(rows, columns, null, null);
+    }
+
+    public OfgdbResultSet(
+            List<Map<String, Object>> rows,
+            List<String> columns,
+            List<Integer> jdbcTypes,
+            List<String> jdbcTypeNames) {
         this.rows = rows != null ? rows : Collections.<Map<String, Object>>emptyList();
         this.columns = columns != null ? columns : Collections.<String>emptyList();
+        this.inferTypesFromRows = jdbcTypes == null;
+        this.jdbcTypes = normalizeJdbcTypes(jdbcTypes, this.columns.size());
+        this.jdbcTypeNames = normalizeJdbcTypeNames(jdbcTypeNames, this.columns.size());
     }
 
     @Override
@@ -157,8 +172,18 @@ public class OfgdbResultSet extends AbstractResultSet {
         javax.sql.rowset.RowSetMetaDataImpl ret = new javax.sql.rowset.RowSetMetaDataImpl();
         ret.setColumnCount(columns.size());
         for (int i = 0; i < columns.size(); i++) {
-            ret.setColumnName(i + 1, columns.get(i));
-            ret.setColumnType(i + 1, java.sql.Types.VARCHAR);
+            String columnName = columns.get(i);
+            int jdbcType = jdbcTypes.get(i).intValue();
+            if (jdbcType == java.sql.Types.VARCHAR && inferTypesFromRows) {
+                jdbcType = inferJdbcTypeForColumn(columnName);
+            }
+            String typeName = jdbcTypeNames.get(i);
+            if (typeName == null || typeName.isEmpty()) {
+                typeName = OfgdbTypeUtil.jdbcTypeName(jdbcType, columnName);
+            }
+            ret.setColumnName(i + 1, columnName);
+            ret.setColumnType(i + 1, jdbcType);
+            ret.setColumnTypeName(i + 1, typeName);
         }
         return ret;
     }
@@ -188,5 +213,47 @@ public class OfgdbResultSet extends AbstractResultSet {
             }
         }
         throw new SQLException("expected binary value in " + column + " but got " + value.getClass().getName());
+    }
+
+    private int inferJdbcTypeForColumn(String columnName) {
+        for (Map<String, Object> row : rows) {
+            Object value = row.get(columnName);
+            if (value == null && !row.containsKey(columnName)) {
+                for (Map.Entry<String, Object> entry : row.entrySet()) {
+                    if (entry.getKey().equalsIgnoreCase(columnName)) {
+                        value = entry.getValue();
+                        break;
+                    }
+                }
+            }
+            if (value != null) {
+                return OfgdbTypeUtil.jdbcTypeFromValue(value);
+            }
+        }
+        return java.sql.Types.VARCHAR;
+    }
+
+    private static List<Integer> normalizeJdbcTypes(List<Integer> jdbcTypes, int count) {
+        List<Integer> normalized = new ArrayList<Integer>(count);
+        for (int i = 0; i < count; i++) {
+            if (jdbcTypes != null && i < jdbcTypes.size() && jdbcTypes.get(i) != null) {
+                normalized.add(jdbcTypes.get(i));
+            } else {
+                normalized.add(Integer.valueOf(java.sql.Types.VARCHAR));
+            }
+        }
+        return normalized;
+    }
+
+    private static List<String> normalizeJdbcTypeNames(List<String> jdbcTypeNames, int count) {
+        List<String> normalized = new ArrayList<String>(count);
+        for (int i = 0; i < count; i++) {
+            if (jdbcTypeNames != null && i < jdbcTypeNames.size()) {
+                normalized.add(jdbcTypeNames.get(i));
+            } else {
+                normalized.add(null);
+            }
+        }
+        return normalized;
     }
 }

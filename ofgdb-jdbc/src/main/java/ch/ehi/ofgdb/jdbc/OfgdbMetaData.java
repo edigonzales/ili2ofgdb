@@ -151,51 +151,39 @@ public class OfgdbMetaData implements DatabaseMetaData {
 			if(!matchesPattern(tableName, tableNamePattern)){
 				continue;
 			}
-			long tableHandle=0L;
-			try{
-				tableHandle=conn.getApi().openTable(conn.getDbHandle(), tableName);
-				List<String> fieldNames=conn.getApi().getFieldNames(tableHandle);
-				for(int i=0;i<fieldNames.size();i++){
-					String fieldName=fieldNames.get(i);
-					if(!matchesPattern(fieldName, columnNamePattern)){
-						continue;
-					}
-					Map<String,Object> row=new HashMap<String,Object>();
-					row.put("TABLE_CAT", catalog);
-					row.put("TABLE_SCHEM", null);
-					row.put("TABLE_NAME", tableName);
-					row.put("COLUMN_NAME", fieldName);
-					row.put("DATA_TYPE", guessJdbcType(fieldName));
-					row.put("TYPE_NAME", "VARCHAR");
-					row.put("COLUMN_SIZE", Integer.valueOf(4000));
-					row.put("BUFFER_LENGTH", null);
-					row.put("DECIMAL_DIGITS", null);
-					row.put("NUM_PREC_RADIX", Integer.valueOf(10));
-					row.put("NULLABLE", Integer.valueOf(columnNullableUnknown));
-					row.put("REMARKS", null);
-					row.put("COLUMN_DEF", null);
-					row.put("SQL_DATA_TYPE", null);
-					row.put("SQL_DATETIME_SUB", null);
-					row.put("CHAR_OCTET_LENGTH", Integer.valueOf(4000));
-					row.put("ORDINAL_POSITION", Integer.valueOf(i+1));
-					row.put("IS_NULLABLE", "YES");
-					row.put("SCOPE_CATALOG", null);
-					row.put("SCOPE_SCHEMA", null);
-					row.put("SCOPE_TABLE", null);
-					row.put("SOURCE_DATA_TYPE", null);
-					row.put("IS_AUTOINCREMENT", isPrimaryKeyColumn(fieldName) ? "YES" : "NO");
-					row.put("IS_GENERATEDCOLUMN", "NO");
-					rows.add(row);
+			List<ColumnMetadata> fieldInfos = readTableColumnMetadata(tableName);
+			for(int i=0;i<fieldInfos.size();i++){
+				ColumnMetadata info = fieldInfos.get(i);
+				String fieldName=info.fieldName;
+				if(!matchesPattern(fieldName, columnNamePattern)){
+					continue;
 				}
-			}catch(ch.ehi.openfgdb4j.OpenFgdbException e){
-				throw new SQLException("failed to read columns metadata",e);
-			}finally{
-				if(tableHandle!=0L){
-					try {
-						conn.getApi().closeTable(conn.getDbHandle(), tableHandle);
-					} catch (ch.ehi.openfgdb4j.OpenFgdbException ignore) {
-					}
-				}
+				Map<String,Object> row=new HashMap<String,Object>();
+				row.put("TABLE_CAT", catalog);
+				row.put("TABLE_SCHEM", null);
+				row.put("TABLE_NAME", tableName);
+				row.put("COLUMN_NAME", fieldName);
+				row.put("DATA_TYPE", Integer.valueOf(info.jdbcType));
+				row.put("TYPE_NAME", info.typeName);
+				row.put("COLUMN_SIZE", info.columnSize);
+				row.put("BUFFER_LENGTH", null);
+				row.put("DECIMAL_DIGITS", info.decimalDigits);
+				row.put("NUM_PREC_RADIX", info.numPrecRadix);
+				row.put("NULLABLE", Integer.valueOf(columnNullableUnknown));
+				row.put("REMARKS", null);
+				row.put("COLUMN_DEF", null);
+				row.put("SQL_DATA_TYPE", null);
+				row.put("SQL_DATETIME_SUB", null);
+				row.put("CHAR_OCTET_LENGTH", info.charOctetLength);
+				row.put("ORDINAL_POSITION", Integer.valueOf(i+1));
+				row.put("IS_NULLABLE", "YES");
+				row.put("SCOPE_CATALOG", null);
+				row.put("SCOPE_SCHEMA", null);
+				row.put("SCOPE_TABLE", null);
+				row.put("SOURCE_DATA_TYPE", null);
+				row.put("IS_AUTOINCREMENT", OfgdbTypeUtil.isPrimaryKeyColumn(fieldName) ? "YES" : "NO");
+				row.put("IS_GENERATEDCOLUMN", "NO");
+				rows.add(row);
 			}
 		}
 		return new OfgdbResultSet(rows,columns);
@@ -620,49 +608,186 @@ public class OfgdbMetaData implements DatabaseMetaData {
 	}
 
 	private List<String> readPrimaryKeyCandidates(String tableName) throws SQLException {
-		List<String> keys = new ArrayList<String>();
 		if (tableName == null || tableName.trim().isEmpty()) {
+			return new ArrayList<String>();
+		}
+		String resolvedTableName = conn.resolveTableName(tableName);
+		OfgdbTableSchema tableSchema = conn.getTableSchema(resolvedTableName);
+		List<String> keys = tableSchema.getPrimaryKeyColumns();
+		if (!keys.isEmpty()) {
 			return keys;
 		}
-		long tableHandle = 0L;
+		ArrayList<String> fallback = new ArrayList<String>();
+		for (OfgdbColumnSchema column : tableSchema.columns) {
+			if (OfgdbTypeUtil.isPrimaryKeyColumn(column.name)) {
+				fallback.add(column.name);
+			}
+		}
+		return fallback;
+	}
+
+	private List<ColumnMetadata> readTableColumnMetadata(String tableName) throws SQLException {
+		List<ColumnMetadata> fields = new ArrayList<ColumnMetadata>();
+		if (tableName == null || tableName.trim().isEmpty()) {
+			return fields;
+		}
+		String resolvedTableName = conn.resolveTableName(tableName);
+		OfgdbTableSchema tableSchema = conn.getTableSchema(resolvedTableName);
+		for (OfgdbColumnSchema schemaColumn : tableSchema.columns) {
+			ColumnMetadata meta = new ColumnMetadata(schemaColumn.name, schemaColumn.jdbcType);
+			meta.typeName = schemaColumn.jdbcTypeName != null ? schemaColumn.jdbcTypeName : meta.typeName;
+			meta.columnSize = schemaColumn.columnSize != null ? schemaColumn.columnSize : meta.columnSize;
+			meta.decimalDigits = schemaColumn.decimalDigits != null ? schemaColumn.decimalDigits : meta.decimalDigits;
+			meta.numPrecRadix = schemaColumn.numPrecRadix != null ? schemaColumn.numPrecRadix : meta.numPrecRadix;
+			meta.charOctetLength = schemaColumn.charOctetLength != null ? schemaColumn.charOctetLength : meta.charOctetLength;
+			meta.inferredBySampling = false;
+			fields.add(meta);
+		}
+		return fields;
+	}
+
+	private Integer tryInferJdbcTypeFromRow(long rowHandle, String fieldName) throws ch.ehi.openfgdb4j.OpenFgdbException {
+		if (conn.getApi().rowIsNull(rowHandle, fieldName)) {
+			return null;
+		}
+		Integer intValue = tryRowGetInt32(rowHandle, fieldName);
+		if (intValue != null) {
+			return Integer.valueOf(Types.INTEGER);
+		}
+		Double doubleValue = tryRowGetDouble(rowHandle, fieldName);
+		if (doubleValue != null) {
+			return Integer.valueOf(Types.DOUBLE);
+		}
+		byte[] blobValue = tryRowGetBlob(rowHandle, fieldName);
+		if (blobValue != null) {
+			return Integer.valueOf(Types.VARBINARY);
+		}
+		String textValue = tryRowGetString(rowHandle, fieldName);
+		if (textValue != null) {
+			if (OfgdbTypeUtil.isLikelyGeometryColumn(fieldName) || OfgdbTypeUtil.looksBinaryText(textValue)) {
+				byte[] geometry = tryRowGetGeometry(rowHandle);
+				if (geometry != null) {
+					return Integer.valueOf(Types.VARBINARY);
+				}
+			}
+			return Integer.valueOf(Types.VARCHAR);
+		}
+		if (OfgdbTypeUtil.isLikelyGeometryColumn(fieldName)) {
+			byte[] geometry = tryRowGetGeometry(rowHandle);
+			if (geometry != null) {
+				return Integer.valueOf(Types.VARBINARY);
+			}
+		}
+		return null;
+	}
+
+	private Integer tryRowGetInt32(long rowHandle, String fieldName) throws ch.ehi.openfgdb4j.OpenFgdbException {
 		try {
-			String resolvedTableName = conn.resolveTableName(tableName);
-			tableHandle = conn.getApi().openTable(conn.getDbHandle(), resolvedTableName);
-			List<String> fieldNames = conn.getApi().getFieldNames(tableHandle);
-			for (String fieldName : fieldNames) {
-				if (isPrimaryKeyColumn(fieldName)) {
-					keys.add(fieldName);
-				}
-			}
+			return conn.getApi().rowGetInt32(rowHandle, fieldName);
 		} catch (ch.ehi.openfgdb4j.OpenFgdbException e) {
-			throw new SQLException("failed to read primary key metadata", e);
-		} finally {
-			if (tableHandle != 0L) {
-				try {
-					conn.getApi().closeTable(conn.getDbHandle(), tableHandle);
-				} catch (ch.ehi.openfgdb4j.OpenFgdbException ignore) {
-				}
+			if (isTypeMismatch(e)) {
+				return null;
 			}
+			throw e;
 		}
-		return keys;
 	}
 
-	private static int guessJdbcType(String fieldName) {
-		if (isPrimaryKeyColumn(fieldName)) {
-			return Types.INTEGER;
+	private Double tryRowGetDouble(long rowHandle, String fieldName) throws ch.ehi.openfgdb4j.OpenFgdbException {
+		try {
+			return conn.getApi().rowGetDouble(rowHandle, fieldName);
+		} catch (ch.ehi.openfgdb4j.OpenFgdbException e) {
+			if (isTypeMismatch(e)) {
+				return null;
+			}
+			throw e;
 		}
-		return Types.VARCHAR;
 	}
 
-	private static boolean isPrimaryKeyColumn(String fieldName) {
-		if (fieldName == null) {
-			return false;
+	private byte[] tryRowGetBlob(long rowHandle, String fieldName) throws ch.ehi.openfgdb4j.OpenFgdbException {
+		try {
+			return conn.getApi().rowGetBlob(rowHandle, fieldName);
+		} catch (ch.ehi.openfgdb4j.OpenFgdbException e) {
+			if (isTypeMismatch(e)) {
+				return null;
+			}
+			throw e;
 		}
-		return "OBJECTID".equalsIgnoreCase(fieldName)
-				|| "OID".equalsIgnoreCase(fieldName)
-				|| "FID".equalsIgnoreCase(fieldName)
-				|| "T_ID".equalsIgnoreCase(fieldName)
-				|| "T_Id".equalsIgnoreCase(fieldName);
+	}
+
+	private String tryRowGetString(long rowHandle, String fieldName) throws ch.ehi.openfgdb4j.OpenFgdbException {
+		try {
+			return conn.getApi().rowGetString(rowHandle, fieldName);
+		} catch (ch.ehi.openfgdb4j.OpenFgdbException e) {
+			if (isTypeMismatch(e)) {
+				return null;
+			}
+			throw e;
+		}
+	}
+
+	private byte[] tryRowGetGeometry(long rowHandle) throws ch.ehi.openfgdb4j.OpenFgdbException {
+		try {
+			return conn.getApi().rowGetGeometry(rowHandle);
+		} catch (ch.ehi.openfgdb4j.OpenFgdbException e) {
+			if (isTypeMismatch(e) || isNotFound(e)) {
+				return null;
+			}
+			throw e;
+		}
+	}
+
+	private static boolean isTypeMismatch(ch.ehi.openfgdb4j.OpenFgdbException ex) {
+		return ex != null && ex.getErrorCode() == ch.ehi.openfgdb4j.OpenFgdb.OFGDB_ERR_INVALID_ARG;
+	}
+
+	private static boolean isNotFound(ch.ehi.openfgdb4j.OpenFgdbException ex) {
+		return ex != null && ex.getErrorCode() == ch.ehi.openfgdb4j.OpenFgdb.OFGDB_ERR_NOT_FOUND;
+	}
+
+	private static String joinColumns(List<String> columns) {
+		StringBuilder out = new StringBuilder();
+		String sep = "";
+		for (String column : columns) {
+			out.append(sep).append(column);
+			sep = ",";
+		}
+		return out.toString();
+	}
+
+	private static final class ColumnMetadata {
+		final String fieldName;
+		int jdbcType;
+		String typeName;
+		Integer columnSize;
+		Integer decimalDigits;
+		Integer numPrecRadix;
+		Integer charOctetLength;
+		boolean inferredBySampling;
+
+		private ColumnMetadata(String fieldName, int jdbcType) {
+			this.fieldName = fieldName;
+			applyJdbcType(jdbcType, false);
+		}
+
+		static ColumnMetadata withDefaultType(String fieldName) {
+			int jdbcType = Types.VARCHAR;
+			if (OfgdbTypeUtil.isPrimaryKeyColumn(fieldName)) {
+				jdbcType = Types.INTEGER;
+			} else if (OfgdbTypeUtil.isLikelyGeometryColumn(fieldName)) {
+				jdbcType = Types.VARBINARY;
+			}
+			return new ColumnMetadata(fieldName, jdbcType);
+		}
+
+		void applyJdbcType(int jdbcType, boolean fromSampling) {
+			this.jdbcType = jdbcType;
+			this.typeName = OfgdbTypeUtil.jdbcTypeName(jdbcType, fieldName);
+			this.columnSize = OfgdbTypeUtil.defaultColumnSize(jdbcType);
+			this.decimalDigits = OfgdbTypeUtil.defaultDecimalDigits(jdbcType);
+			this.numPrecRadix = OfgdbTypeUtil.defaultRadix(jdbcType);
+			this.charOctetLength = OfgdbTypeUtil.defaultCharOctetLength(jdbcType);
+			this.inferredBySampling = fromSampling;
+		}
 	}
 
 	private static Map<String, Object> typeInfoRow(String typeName, int jdbcType, Integer precision,
@@ -725,6 +850,7 @@ public class OfgdbMetaData implements DatabaseMetaData {
 		rows.add(typeInfoRow("INTEGER", Types.INTEGER, Integer.valueOf(10), Boolean.FALSE, Boolean.FALSE));
 		rows.add(typeInfoRow("BIGINT", Types.BIGINT, Integer.valueOf(19), Boolean.FALSE, Boolean.FALSE));
 		rows.add(typeInfoRow("DOUBLE", Types.DOUBLE, Integer.valueOf(15), Boolean.FALSE, Boolean.FALSE));
+		rows.add(typeInfoRow("GEOMETRY", Types.VARBINARY, Integer.valueOf(Integer.MAX_VALUE), Boolean.FALSE, Boolean.FALSE));
 		rows.add(typeInfoRow("BLOB", Types.BLOB, Integer.valueOf(Integer.MAX_VALUE), Boolean.FALSE, Boolean.FALSE));
 		return new OfgdbResultSet(rows, columns);
 	}

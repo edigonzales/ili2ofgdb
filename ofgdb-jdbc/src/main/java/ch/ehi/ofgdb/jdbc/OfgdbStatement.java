@@ -53,12 +53,15 @@ public class OfgdbStatement implements Statement {
             "(?is)^(.*?)(?:\\s+LIMIT\\s+(\\d+)(?:\\s+OFFSET\\s+(\\d+))?)\\s*$");
     private static final Pattern OFFSET_FETCH_PATTERN = Pattern.compile(
             "(?is)^(.*?)(?:\\s+OFFSET\\s+(\\d+)\\s+ROWS?\\s+FETCH\\s+NEXT\\s+(\\d+)\\s+ROWS?\\s+ONLY)\\s*$");
+    private static final Pattern SELECT_LEADING_PATTERN = Pattern.compile("(?is)^\\s*SELECT\\b.*$");
 
     private final OfgdbConnection conn;
+    private final OfgdbGeometryNormalizer geometryNormalizer = new OfgdbGeometryNormalizer();
     private boolean closed = false;
     private ResultSet currentResultSet = null;
     private int updateCount = -1;
     private final List<String> batchedSql = new ArrayList<String>();
+    private SQLWarning warnings = null;
 
     protected OfgdbStatement(OfgdbConnection conn) {
         this.conn = conn;
@@ -67,6 +70,7 @@ public class OfgdbStatement implements Statement {
     @Override
     public ResultSet executeQuery(String sql) throws SQLException {
         ensureOpen();
+        clearWarnings();
         ResultSet rs = executeSelectSql(normalizeSelectSql(sql));
         currentResultSet = rs;
         updateCount = -1;
@@ -76,6 +80,7 @@ public class OfgdbStatement implements Statement {
     @Override
     public int executeUpdate(String sql) throws SQLException {
         ensureOpen();
+        clearWarnings();
         String normalizedSql = normalizeSelectSql(sql);
         if (normalizedSql == null || normalizedSql.isEmpty()) {
             throw new SQLException("empty SQL statement");
@@ -97,12 +102,12 @@ public class OfgdbStatement implements Statement {
     @Override
     public boolean execute(String sql) throws SQLException {
         ensureOpen();
+        clearWarnings();
         String normalizedSql = normalizeSelectSql(sql);
         if (normalizedSql == null || normalizedSql.isEmpty()) {
             throw new SQLException("empty SQL statement");
         }
-        String upper = normalizedSql != null ? normalizedSql.toUpperCase(Locale.ROOT) : "";
-        if (upper.startsWith("SELECT ")) {
+        if (SELECT_LEADING_PATTERN.matcher(normalizedSql).matches()) {
             executeQuery(normalizedSql);
             return true;
         }
@@ -120,6 +125,7 @@ public class OfgdbStatement implements Statement {
             currentResultSet = null;
         }
         batchedSql.clear();
+        warnings = null;
         closed = true;
     }
 
@@ -216,11 +222,12 @@ public class OfgdbStatement implements Statement {
 
     @Override
     public SQLWarning getWarnings() {
-        return null;
+        return warnings;
     }
 
     @Override
     public void clearWarnings() {
+        warnings = null;
     }
 
     @Override
@@ -479,8 +486,12 @@ public class OfgdbStatement implements Statement {
         }
         ResultSetMetaData md = rs.getMetaData();
         List<String> columns = new ArrayList<String>();
+        List<Integer> jdbcTypes = new ArrayList<Integer>();
+        List<String> jdbcTypeNames = new ArrayList<String>();
         for (int i = 1; i <= md.getColumnCount(); i++) {
             columns.add(md.getColumnName(i));
+            jdbcTypes.add(Integer.valueOf(md.getColumnType(i)));
+            jdbcTypeNames.add(md.getColumnTypeName(i));
         }
         List<Map<String, Object>> allRows = new ArrayList<Map<String, Object>>();
         try {
@@ -497,12 +508,14 @@ public class OfgdbStatement implements Statement {
         int fromIndex = Math.min(limitSpec.offset, allRows.size());
         int toIndex = Math.min(fromIndex + limitSpec.limit, allRows.size());
         List<Map<String, Object>> slicedRows = new ArrayList<Map<String, Object>>(allRows.subList(fromIndex, toIndex));
-        return new OfgdbResultSet(slicedRows, columns);
+        return new OfgdbResultSet(slicedRows, columns, jdbcTypes, jdbcTypeNames);
     }
 
     private ResultSet executeUnionDerivedSelect(String sql) throws SQLException {
         UnionDerivedSelectSpec spec = parseUnionDerivedSelect(sql);
         List<String> baseColumns = new ArrayList<String>();
+        List<Integer> baseJdbcTypes = new ArrayList<Integer>();
+        List<String> baseJdbcTypeNames = new ArrayList<String>();
         List<Map<String, Object>> mergedRows = new ArrayList<Map<String, Object>>();
         java.util.Set<String> dedup = new java.util.LinkedHashSet<String>();
         for (String unionPart : splitTopLevelUnionParts(spec.unionBody)) {
@@ -513,6 +526,8 @@ public class OfgdbStatement implements Statement {
                 if (baseColumns.isEmpty()) {
                     for (int i = 1; i <= md.getColumnCount(); i++) {
                         baseColumns.add(normalizeColumn(md.getColumnName(i)));
+                        baseJdbcTypes.add(Integer.valueOf(md.getColumnType(i)));
+                        baseJdbcTypeNames.add(md.getColumnTypeName(i));
                     }
                 }
                 while (rs.next()) {
@@ -546,7 +561,20 @@ public class OfgdbStatement implements Statement {
             }
             outRows.add(out);
         }
-        return new OfgdbResultSet(outRows, projectionColumns);
+        List<Integer> projectionTypes = new ArrayList<Integer>(projectionColumns.size());
+        List<String> projectionTypeNames = new ArrayList<String>(projectionColumns.size());
+        for (String column : projectionColumns) {
+            int idx = indexOfIgnoreCase(baseColumns, column);
+            if (idx >= 0 && idx < baseJdbcTypes.size()) {
+                projectionTypes.add(baseJdbcTypes.get(idx));
+                projectionTypeNames.add(baseJdbcTypeNames.get(idx));
+            } else {
+                int jdbcType = inferJdbcTypeFromRows(outRows, column);
+                projectionTypes.add(Integer.valueOf(jdbcType));
+                projectionTypeNames.add(OfgdbTypeUtil.jdbcTypeName(jdbcType, column));
+            }
+        }
+        return new OfgdbResultSet(outRows, projectionColumns, projectionTypes, projectionTypeNames);
     }
 
     private static UnionDerivedSelectSpec parseUnionDerivedSelect(String sql) throws SQLException {
@@ -783,6 +811,7 @@ public class OfgdbStatement implements Statement {
                 resolvedTableName = conn.resolveTableName(tableName);
                 tableHandle = api.openTable(conn.getDbHandle(), resolvedTableName);
             }
+            OfgdbTableSchema tableSchema = conn.getTableSchema(resolvedTableName);
             List<String> tableColumns = api.getFieldNames(tableHandle);
             String effectiveFieldSpec = fieldSpec;
             List<String> fetchColumns = new ArrayList<String>();
@@ -822,7 +851,7 @@ public class OfgdbStatement implements Statement {
                 try {
                     Map<String, Object> baseRow = new HashMap<String, Object>();
                     for (String column : fetchColumns) {
-                        baseRow.put(column, readRowValue(api, rowHandle, column));
+                        baseRow.put(column, readRowValue(api, rowHandle, column, tableSchema != null ? tableSchema.getColumn(column) : null));
                     }
                     Map<String, Object> outRow = new HashMap<String, Object>();
                     if (projection == null || projection.isEmpty()) {
@@ -845,7 +874,9 @@ public class OfgdbStatement implements Statement {
                 }
             }
             applyOrderBy(rows, columns, orderByClause);
-            return new OfgdbResultSet(rows, columns);
+            List<Integer> jdbcTypes = resolveOutputJdbcTypes(tableSchema, columns, rows);
+            List<String> jdbcTypeNames = resolveOutputJdbcTypeNames(tableSchema, columns, rows, jdbcTypes);
+            return new OfgdbResultSet(rows, columns, jdbcTypes, jdbcTypeNames);
         } catch (OpenFgdbException e) {
             throw new SQLException("failed to execute query", e);
         } finally {
@@ -1031,6 +1062,60 @@ public class OfgdbStatement implements Statement {
             }
         }
         return null;
+    }
+
+    private static int inferJdbcTypeFromRows(List<Map<String, Object>> rows, String column) {
+        for (Map<String, Object> row : rows) {
+            Object value = getIgnoreCase(row, column);
+            if (value != null) {
+                return OfgdbTypeUtil.jdbcTypeFromValue(value);
+            }
+        }
+        return java.sql.Types.VARCHAR;
+    }
+
+    private static int indexOfIgnoreCase(List<String> values, String probe) {
+        if (values == null || probe == null) {
+            return -1;
+        }
+        for (int i = 0; i < values.size(); i++) {
+            if (values.get(i).equalsIgnoreCase(probe)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static List<Integer> resolveOutputJdbcTypes(OfgdbTableSchema tableSchema, List<String> columns,
+            List<Map<String, Object>> rows) {
+        List<Integer> types = new ArrayList<Integer>(columns.size());
+        for (String column : columns) {
+            OfgdbColumnSchema schemaColumn = tableSchema != null ? tableSchema.getColumn(column) : null;
+            if (schemaColumn != null) {
+                types.add(Integer.valueOf(schemaColumn.jdbcType));
+            } else {
+                types.add(Integer.valueOf(inferJdbcTypeFromRows(rows, column)));
+            }
+        }
+        return types;
+    }
+
+    private static List<String> resolveOutputJdbcTypeNames(OfgdbTableSchema tableSchema, List<String> columns,
+            List<Map<String, Object>> rows, List<Integer> jdbcTypes) {
+        List<String> typeNames = new ArrayList<String>(columns.size());
+        for (int i = 0; i < columns.size(); i++) {
+            String column = columns.get(i);
+            OfgdbColumnSchema schemaColumn = tableSchema != null ? tableSchema.getColumn(column) : null;
+            if (schemaColumn != null && schemaColumn.jdbcTypeName != null) {
+                typeNames.add(schemaColumn.jdbcTypeName);
+            } else {
+                int jdbcType = jdbcTypes != null && i < jdbcTypes.size() && jdbcTypes.get(i) != null
+                        ? jdbcTypes.get(i).intValue()
+                        : inferJdbcTypeFromRows(rows, column);
+                typeNames.add(OfgdbTypeUtil.jdbcTypeName(jdbcType, column));
+            }
+        }
+        return typeNames;
     }
 
     private static boolean containsIgnoreCase(List<String> values, String probe) {
@@ -1377,39 +1462,183 @@ public class OfgdbStatement implements Statement {
         return value;
     }
 
-    private static Object readRowValue(OpenFgdb api, long rowHandle, String column) throws OpenFgdbException {
+    private Object readRowValue(OpenFgdb api, long rowHandle, String column, OfgdbColumnSchema columnSchema) throws OpenFgdbException {
         if (api.rowIsNull(rowHandle, column)) {
             return null;
         }
-        try {
-            byte[] blob = api.rowGetBlob(rowHandle, column);
-            if (blob != null) {
-                return blob;
+        if (columnSchema != null) {
+            if (columnSchema.geometryRole == OfgdbColumnSchema.GeometryRole.FEATURE_GEOMETRY) {
+                byte[] geometry = tryRowGetGeometry(api, rowHandle);
+                if (geometry == null) {
+                    geometry = tryRowGetBlob(api, rowHandle, column);
+                }
+                return normalizeGeometryValue(column, geometry);
             }
-        } catch (OpenFgdbException e) {
-            if (!isTypeMismatch(e)) {
-                throw e;
+            if (columnSchema.geometryRole == OfgdbColumnSchema.GeometryRole.ILI_BLOB_GEOMETRY) {
+                return normalizeGeometryValue(column, tryRowGetBlob(api, rowHandle, column));
+            }
+            switch (columnSchema.jdbcType) {
+            case java.sql.Types.INTEGER:
+            case java.sql.Types.SMALLINT:
+            case java.sql.Types.TINYINT:
+                Integer intValue = tryRowGetInt32(api, rowHandle, column);
+                if (intValue != null) {
+                    return intValue;
+                }
+                break;
+            case java.sql.Types.BIGINT:
+                Integer bigintAsInt = tryRowGetInt32(api, rowHandle, column);
+                if (bigintAsInt != null) {
+                    return Long.valueOf(bigintAsInt.longValue());
+                }
+                break;
+            case java.sql.Types.REAL:
+            case java.sql.Types.FLOAT:
+            case java.sql.Types.DOUBLE:
+            case java.sql.Types.DECIMAL:
+            case java.sql.Types.NUMERIC:
+                Double doubleValue = tryRowGetDouble(api, rowHandle, column);
+                if (doubleValue != null) {
+                    return doubleValue;
+                }
+                break;
+            case java.sql.Types.BLOB:
+            case java.sql.Types.BINARY:
+            case java.sql.Types.VARBINARY:
+            case java.sql.Types.LONGVARBINARY:
+                return tryRowGetBlob(api, rowHandle, column);
+            default:
+                break;
+            }
+            String typedTextValue = tryRowGetString(api, rowHandle, column);
+            if (typedTextValue != null) {
+                return parseValue(typedTextValue);
             }
         }
-        try {
-            String textValue = api.rowGetString(rowHandle, column);
-            if (textValue != null) {
-                return parseValue(textValue);
+        byte[] blobValue = tryRowGetBlob(api, rowHandle, column);
+        if (blobValue != null) {
+            if (OfgdbTypeUtil.isLikelyGeometryColumn(column)) {
+                return normalizeGeometryValue(column, blobValue);
             }
-        } catch (OpenFgdbException e) {
-            if (!isTypeMismatch(e)) {
-                throw e;
+            return blobValue;
+        }
+        Integer intValue = tryRowGetInt32(api, rowHandle, column);
+        if (intValue != null) {
+            return intValue;
+        }
+        Double doubleValue = tryRowGetDouble(api, rowHandle, column);
+        if (doubleValue != null) {
+            return doubleValue;
+        }
+        String textValue = tryRowGetString(api, rowHandle, column);
+        if (textValue != null) {
+            if (OfgdbTypeUtil.isLikelyGeometryColumn(column) || OfgdbTypeUtil.looksBinaryText(textValue)) {
+                byte[] geometry = tryRowGetGeometry(api, rowHandle);
+                if (geometry != null) {
+                    return normalizeGeometryValue(column, geometry);
+                }
+            }
+            return parseValue(textValue);
+        }
+        if (OfgdbTypeUtil.isLikelyGeometryColumn(column)) {
+            byte[] geometry = tryRowGetGeometry(api, rowHandle);
+            if (geometry != null) {
+                return normalizeGeometryValue(column, geometry);
             }
         }
         return null;
+    }
+
+    private byte[] normalizeGeometryValue(String column, byte[] value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return geometryNormalizer.normalizeToWkb(value);
+        } catch (Exception ex) {
+            addWarning("geometry normalization failed for column <" + column + ">: " + ex.getMessage());
+            return value;
+        }
+    }
+
+    private static Integer tryRowGetInt32(OpenFgdb api, long rowHandle, String column) throws OpenFgdbException {
+        try {
+            return api.rowGetInt32(rowHandle, column);
+        } catch (OpenFgdbException e) {
+            if (isTypeMismatch(e)) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private static Double tryRowGetDouble(OpenFgdb api, long rowHandle, String column) throws OpenFgdbException {
+        try {
+            return api.rowGetDouble(rowHandle, column);
+        } catch (OpenFgdbException e) {
+            if (isTypeMismatch(e)) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private static byte[] tryRowGetBlob(OpenFgdb api, long rowHandle, String column) throws OpenFgdbException {
+        try {
+            return api.rowGetBlob(rowHandle, column);
+        } catch (OpenFgdbException e) {
+            if (isTypeMismatch(e)) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private static String tryRowGetString(OpenFgdb api, long rowHandle, String column) throws OpenFgdbException {
+        try {
+            return api.rowGetString(rowHandle, column);
+        } catch (OpenFgdbException e) {
+            if (isTypeMismatch(e)) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private static byte[] tryRowGetGeometry(OpenFgdb api, long rowHandle) throws OpenFgdbException {
+        try {
+            return api.rowGetGeometry(rowHandle);
+        } catch (OpenFgdbException e) {
+            if (isTypeMismatch(e) || isNotFound(e)) {
+                return null;
+            }
+            throw e;
+        }
     }
 
     private static boolean isTypeMismatch(OpenFgdbException ex) {
         return ex != null && ex.getErrorCode() == OpenFgdb.OFGDB_ERR_INVALID_ARG;
     }
 
+    private static boolean isNotFound(OpenFgdbException ex) {
+        return ex != null && ex.getErrorCode() == OpenFgdb.OFGDB_ERR_NOT_FOUND;
+    }
+
     private static boolean isTableNotFound(OpenFgdbException ex) {
         return ex != null && ex.getErrorCode() == OpenFgdb.OFGDB_ERR_NOT_FOUND;
+    }
+
+    private void addWarning(String message) {
+        SQLWarning warning = new SQLWarning(message);
+        if (warnings == null) {
+            warnings = warning;
+            return;
+        }
+        SQLWarning tail = warnings;
+        while (tail.getNextWarning() != null) {
+            tail = tail.getNextWarning();
+        }
+        tail.setNextWarning(warning);
     }
 
     private void ensureOpen() throws SQLException {

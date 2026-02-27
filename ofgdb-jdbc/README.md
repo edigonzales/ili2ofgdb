@@ -46,6 +46,16 @@ Important:
 - Do not use version `RELEASE` for this artifact.
 - The artifact must already be published to the snapshot repository (for example via GitHub Action `ofgdb-jdbc-fatjar` on `main` or via `./gradlew publishOfgdbJdbcFatJarSnapshot`).
 
+### Geometry in DBeaver
+
+With a generic JDBC driver, DBeaver does not always auto-open map rendering for geometry columns.
+If needed, force it per column:
+
+1. Open table data.
+2. Right-click a geometry cell.
+3. `View/Format` -> `Set <column> transform`.
+4. Choose `Geometry` (SRID as needed).
+
 ## Build
 
 ```bash

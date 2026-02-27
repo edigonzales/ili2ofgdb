@@ -32,6 +32,7 @@ public class OfgdbConnection implements Connection {
     private final OpenFgdb api;
     private final String url;
     private final LinkedHashSet<String> knownTables = new LinkedHashSet<String>();
+    private final OfgdbSchemaCatalog schemaCatalog;
     private long dbHandle;
     private boolean autoCommit = true;
     private Path txnSnapshotPath = null;
@@ -41,6 +42,7 @@ public class OfgdbConnection implements Connection {
         this.api = api;
         this.dbHandle = dbHandle;
         this.url = url;
+        this.schemaCatalog = new OfgdbSchemaCatalog(this);
         refreshKnownTableNames();
     }
 
@@ -63,6 +65,7 @@ public class OfgdbConnection implements Connection {
             synchronized (this) {
                 knownTables.clear();
             }
+            schemaCatalog.invalidateAll();
             refreshKnownTableNames();
         } catch (OpenFgdbException e) {
             throw new SQLException("failed to reopen openfgdb connection", e);
@@ -86,12 +89,14 @@ public class OfgdbConnection implements Connection {
     synchronized void registerTableName(String tableName) {
         if (tableName != null && !tableName.isEmpty()) {
             knownTables.add(tableName);
+            schemaCatalog.invalidateTable(tableName);
         }
     }
 
     synchronized void removeTableName(String tableName) {
         if (tableName != null) {
             knownTables.remove(tableName);
+            schemaCatalog.invalidateTable(tableName);
         }
     }
 
@@ -112,6 +117,15 @@ public class OfgdbConnection implements Connection {
         refreshKnownTableNames();
         resolved = findKnownTableName(probeCandidates);
         return resolved != null ? resolved : probe;
+    }
+
+    OfgdbTableSchema getTableSchema(String tableName) throws SQLException {
+        ensureOpen();
+        return schemaCatalog.getTableSchema(tableName);
+    }
+
+    void invalidateAllSchemaCache() {
+        schemaCatalog.invalidateAll();
     }
 
     private synchronized String findKnownTableName(List<String> probes) {
@@ -258,6 +272,7 @@ public class OfgdbConnection implements Connection {
         } finally {
             dbHandle = 0L;
             knownTables.clear();
+            schemaCatalog.invalidateAll();
             autoCommit = true;
             cleanupSnapshotQuietly();
             closed = true;
@@ -578,6 +593,7 @@ public class OfgdbConnection implements Connection {
                 synchronized (this) {
                     knownTables.clear();
                 }
+                schemaCatalog.invalidateAll();
                 refreshKnownTableNames();
             }
             OfgdbFileSnapshot.deleteRecursively(txnSnapshotPath);

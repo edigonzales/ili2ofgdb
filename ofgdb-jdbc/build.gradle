@@ -19,6 +19,11 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'US-ASCII'
 }
 
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'US-ASCII'
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 repositories {
     mavenLocal()
     maven {
@@ -45,6 +50,7 @@ def sogeoSnapshotsPassword = System.getProperty('sogeoSnapshotsPassword') ?:
 dependencies {
     implementation(group: 'ch.so.agi', name: 'openfgdb4j-api', version: '0.1.0-SNAPSHOT', changing: true)
     runtimeOnly(group: 'ch.so.agi', name: 'openfgdb4j-natives', version: '0.1.0-SNAPSHOT', changing: true)
+    implementation(group: 'ch.interlis', name: 'iox-ili', version: '1.24.4')
     implementation 'antlr:antlr:2.7.7'
 
     testImplementation 'junit:junit:4.13.2'
