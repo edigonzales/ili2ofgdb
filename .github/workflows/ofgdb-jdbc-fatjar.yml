@@ -1,0 +1,61 @@
+name: ofgdb-jdbc-fatjar
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'ofgdb-jdbc/**'
+      - '.github/workflows/ofgdb-jdbc-fatjar.yml'
+  pull_request:
+    paths:
+      - 'ofgdb-jdbc/**'
+      - '.github/workflows/ofgdb-jdbc-fatjar.yml'
+
+jobs:
+  build_and_test:
+    name: build-test
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 22
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '22'
+
+      - name: Build and test ofgdb-jdbc
+        shell: bash
+        run: |
+          cd ofgdb-jdbc
+          ./gradlew --no-daemon clean test verifyFatJarContainsNatives
+
+  publish_fatjar_snapshot:
+    name: publish-ofgdb-jdbc-fatjar
+    needs: build_and_test
+    runs-on: ubuntu-24.04
+    if: >
+      needs.build_and_test.result == 'success' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 22
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '22'
+
+      - name: Publish ofgdb-jdbc fat jar snapshot
+        shell: bash
+        env:
+          ORG_GRADLE_PROJECT_sogeoSnapshotsUser: ${{ secrets.SOGEO_SNAPSHOTS_USER }}
+          ORG_GRADLE_PROJECT_sogeoSnapshotsPassword: ${{ secrets.SOGEO_SNAPSHOTS_PASSWORD }}
+          ORG_GRADLE_PROJECT_sogeoSnapshotsUrl: https://jar.sogeo.services/snapshots
+        run: |
+          cd ofgdb-jdbc
+          ./gradlew --no-daemon publishOfgdbJdbcFatJarSnapshot

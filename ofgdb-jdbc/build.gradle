@@ -1,0 +1,133 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'ch.so.agi'
+version = '0.1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(22)
+    }
+    withJavadocJar()
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'US-ASCII'
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url 'https://jars.sogeo.services/snapshots'
+    }
+    mavenCentral()
+}
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+def sogeoSnapshotsUrl = System.getProperty('sogeoSnapshotsUrl') ?:
+        findProperty('sogeoSnapshotsUrl') ?:
+        'https://jar.sogeo.services/snapshots'
+def sogeoSnapshotsUser = System.getProperty('sogeoSnapshotsUser') ?:
+        findProperty('sogeoSnapshotsUser')
+def sogeoSnapshotsPassword = System.getProperty('sogeoSnapshotsPassword') ?:
+        findProperty('sogeoSnapshotsPassword')
+
+dependencies {
+    implementation(group: 'ch.so.agi', name: 'openfgdb4j-api', version: '0.1.0-SNAPSHOT', changing: true)
+    runtimeOnly(group: 'ch.so.agi', name: 'openfgdb4j-natives', version: '0.1.0-SNAPSHOT', changing: true)
+    implementation 'antlr:antlr:2.7.7'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.hamcrest:hamcrest-library:2.2'
+}
+
+tasks.jar {
+    manifest {
+        attributes(
+            'Implementation-Title': 'ofgdb-jdbc',
+            'Implementation-Version': project.version,
+            'Automatic-Module-Name': 'ch.ehi.ofgdb.jdbc'
+        )
+    }
+}
+
+tasks.shadowJar {
+    archiveClassifier = 'all'
+    mergeServiceFiles()
+    manifest {
+        attributes(
+            'Implementation-Title': 'ofgdb-jdbc',
+            'Implementation-Version': project.version,
+            'Automatic-Module-Name': 'ch.ehi.ofgdb.jdbc'
+        )
+    }
+}
+
+tasks.build {
+    dependsOn tasks.shadowJar
+}
+
+tasks.register('verifyFatJarContainsNatives') {
+    dependsOn tasks.shadowJar
+    doLast {
+        File fatJar = tasks.shadowJar.archiveFile.get().asFile
+        def entries = zipTree(fatJar).matching {
+            include 'META-INF/openfgdb4j/native/**'
+        }
+        if (entries.isEmpty()) {
+            throw new GradleException("No openfgdb native resources found in ${fatJar}")
+        }
+    }
+}
+
+publishing {
+    publications {
+        ofgdbJdbcFatJar(MavenPublication) {
+            groupId = project.group
+            artifactId = 'ofgdb-jdbc'
+            version = project.version
+            artifact(tasks.shadowJar)
+        }
+    }
+    repositories {
+        maven {
+            name = 'sogeoSnapshots'
+            url = uri(sogeoSnapshotsUrl)
+            credentials {
+                username = sogeoSnapshotsUser
+                password = sogeoSnapshotsPassword
+            }
+        }
+    }
+}
+
+tasks.register('verifySogeoSnapshotsCredentials') {
+    doLast {
+        if (sogeoSnapshotsUser == null || sogeoSnapshotsUser.trim().isEmpty()) {
+            throw new GradleException('Missing sogeoSnapshotsUser. Provide -DsogeoSnapshotsUser or ORG_GRADLE_PROJECT_sogeoSnapshotsUser.')
+        }
+        if (sogeoSnapshotsPassword == null || sogeoSnapshotsPassword.trim().isEmpty()) {
+            throw new GradleException('Missing sogeoSnapshotsPassword. Provide -DsogeoSnapshotsPassword or ORG_GRADLE_PROJECT_sogeoSnapshotsPassword.')
+        }
+    }
+}
+
+afterEvaluate {
+    tasks.matching { it.name == 'publishOfgdbJdbcFatJarPublicationToSogeoSnapshotsRepository' }.all {
+        dependsOn tasks.verifyFatJarContainsNatives
+        dependsOn tasks.verifySogeoSnapshotsCredentials
+    }
+}
+
+tasks.register('publishOfgdbJdbcFatJarSnapshot') {
+    group = 'publishing'
+    description = 'Publishes ofgdb-jdbc fat jar snapshot to the SOGEO snapshots Maven repository.'
+    dependsOn 'publishOfgdbJdbcFatJarPublicationToSogeoSnapshotsRepository'
+}
