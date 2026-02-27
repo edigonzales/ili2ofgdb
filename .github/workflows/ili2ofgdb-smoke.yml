@@ -5,7 +5,13 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - 'ofgdb-jdbc/**'
+      - 'ojgdb-jdbc/**'
   pull_request:
+    paths-ignore:
+      - 'ofgdb-jdbc/**'
+      - 'ojgdb-jdbc/**'
 
 jobs:
   smoke_matrix:
