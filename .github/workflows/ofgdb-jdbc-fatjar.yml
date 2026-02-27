@@ -55,7 +55,7 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_sogeoSnapshotsUser: ${{ secrets.SOGEO_SNAPSHOTS_USER }}
           ORG_GRADLE_PROJECT_sogeoSnapshotsPassword: ${{ secrets.SOGEO_SNAPSHOTS_PASSWORD }}
-          ORG_GRADLE_PROJECT_sogeoSnapshotsUrl: https://jar.sogeo.services/snapshots
+          ORG_GRADLE_PROJECT_sogeoSnapshotsUrl: https://jars.sogeo.services/snapshots
         run: |
           cd ofgdb-jdbc
           ./gradlew --no-daemon publishOfgdbJdbcFatJarSnapshot
