@@ -24,6 +24,9 @@ repositories {
     maven {
         url 'https://jars.sogeo.services/snapshots'
     }
+    maven {
+        url 'https://jars.sogeo.services/mirror'
+    }    
     mavenCentral()
 }
 
@@ -33,7 +36,7 @@ configurations.all {
 
 def sogeoSnapshotsUrl = System.getProperty('sogeoSnapshotsUrl') ?:
         findProperty('sogeoSnapshotsUrl') ?:
-        'https://jar.sogeo.services/snapshots'
+        'https://jars.sogeo.services/snapshots'
 def sogeoSnapshotsUser = System.getProperty('sogeoSnapshotsUser') ?:
         findProperty('sogeoSnapshotsUser')
 def sogeoSnapshotsPassword = System.getProperty('sogeoSnapshotsPassword') ?:

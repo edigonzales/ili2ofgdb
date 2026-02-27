@@ -24,4 +24,9 @@ java -jar /Users/stefan/Downloads/ili2ofgdb-5.5.2-20260227.142512-9-bindist/ili2
 java -jar /Users/stefan/Downloads/ili2ofgdb-5.5.2-20260227.142512-9-bindist/ili2ofgdb-5.5.2-SNAPSHOT.jar --defaultSrsCode 2056 --createGeomIdx --fgdbXyResolution 0.0001 --fgdbXyTolerance 0.0001 --fgdbCreateDomains --fgdbCreateRelationshipClasses --dbfile npl_2586.gdb --log npl_2586.log --models SO_ARP_Nutzungsplanung_Publikation_20201005 --doSchemaImport --import npl_2586.xtf
 
 
-SO_ARP_Nutzungsplanung_Publikation_20201005
+
+java -jar /Users/stefan/Downloads/ili2ofgdb-5.5.2-20260227.142512-9-bindist/ili2ofgdb-5.5.2-SNAPSHOT.jar --defaultSrsCode 2056 --createGeomIdx --fgdbXyResolution 0.0001 --fgdbXyTolerance 0.0001 --fgdbCreateDomains --fgdbCreateRelationshipClasses --dbfile npl_2546.gdb --log npl_2546.log --models SO_ARP_Nutzungsplanung_Publikation_20201005 --doSchemaImport --import npl_2546.xtf
+
+
+java -jar /Users/stefan/Downloads/ili2ofgdb-5.5.2-20260227.142512-9-bindist/ili2ofgdb-5.5.2-SNAPSHOT.jar --defaultSrsCode 2056 --createGeomIdx --fgdbXyResolution 0.0001 --fgdbXyTolerance 0.0001 --fgdbCreateDomains --fgdbCreateRelationshipClasses --dbfile npl_2546.gdb --log npl_2546.log --models SO_ARP_Nutzungsplanung_Publikation_20201005 --doSchemaImport --import npl_2546.xtf
+

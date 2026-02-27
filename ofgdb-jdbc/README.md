@@ -14,6 +14,8 @@ Standalone JDBC driver for ESRI File Geodatabase based on `openfgdb4j`.
 
 ## DBeaver Setup
 
+### Option A: File-based (local jar)
+
 1. Open `Database` -> `Driver Manager` -> `New`.
 2. Name the driver `ofgdb-jdbc`.
 3. Set Class Name to `ch.ehi.ofgdb.jdbc.OfgdbDriver`.
@@ -22,6 +24,20 @@ Standalone JDBC driver for ESRI File Geodatabase based on `openfgdb4j`.
 6. Create a new connection with URL:
    `jdbc:ofgdb:/absolute/path/to/your.gdb`
 7. Leave user/password empty.
+
+### Option B: Maven-based (snapshot repository)
+
+1. Open `Database` -> `Driver Manager` -> `New`.
+2. Name the driver `ofgdb-jdbc`.
+3. Set Class Name to `ch.ehi.ofgdb.jdbc.OfgdbDriver`.
+4. In the driver libraries, add Maven artifact:
+   `ch.so.agi:ofgdb-jdbc:<version>:all`
+5. Ensure DBeaver can access the snapshot repository:
+   `https://jar.sogeo.services/snapshots`
+6. Save the driver.
+7. Create a new connection with URL:
+   `jdbc:ofgdb:/absolute/path/to/your.gdb`
+8. Leave user/password empty.
 
 ## Build
 
