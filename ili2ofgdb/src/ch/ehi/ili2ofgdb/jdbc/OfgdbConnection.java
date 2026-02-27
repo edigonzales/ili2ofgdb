@@ -10,11 +10,14 @@ import java.sql.NClob;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.SQLClientInfoException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,6 +33,8 @@ public class OfgdbConnection implements Connection {
     private final String url;
     private final LinkedHashSet<String> knownTables = new LinkedHashSet<String>();
     private long dbHandle;
+    private boolean autoCommit = true;
+    private Path txnSnapshotPath = null;
     private boolean closed = false;
 
     protected OfgdbConnection(OpenFgdb api, long dbHandle, String url) {
@@ -228,16 +233,37 @@ public class OfgdbConnection implements Connection {
     }
 
     @Override
-    public void close() throws SQLException {
+    public synchronized void close() throws SQLException {
         if (closed) {
             return;
         }
+        SQLException failure = null;
+        if (!autoCommit) {
+            try {
+                rollbackInternal(false);
+            } catch (SQLException e) {
+                failure = e;
+            }
+        }
         try {
-            api.close(dbHandle);
-            dbHandle = 0L;
-            closed = true;
+            if (dbHandle != 0L) {
+                api.close(dbHandle);
+            }
         } catch (OpenFgdbException e) {
-            throw new SQLException("failed to close openfgdb connection", e);
+            SQLException closeFailure = new SQLException("failed to close openfgdb connection", e);
+            if (failure != null) {
+                closeFailure.addSuppressed(failure);
+            }
+            failure = closeFailure;
+        } finally {
+            dbHandle = 0L;
+            knownTables.clear();
+            autoCommit = true;
+            cleanupSnapshotQuietly();
+            closed = true;
+        }
+        if (failure != null) {
+            throw failure;
         }
     }
 
@@ -247,24 +273,43 @@ public class OfgdbConnection implements Connection {
     }
 
     @Override
-    public void commit() {
+    public synchronized void commit() throws SQLException {
+        ensureOpen();
+        if (autoCommit) {
+            return;
+        }
+        cleanupSnapshot();
+        autoCommit = true;
     }
 
     @Override
-    public void rollback() {
+    public synchronized void rollback() throws SQLException {
+        rollbackInternal(true);
     }
 
     @Override
-    public void rollback(Savepoint savepoint) {
+    public void rollback(Savepoint savepoint) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported");
     }
 
     @Override
-    public void setAutoCommit(boolean autoCommit) {
+    public synchronized void setAutoCommit(boolean autoCommit) throws SQLException {
+        ensureOpen();
+        if (this.autoCommit == autoCommit) {
+            return;
+        }
+        if (!autoCommit) {
+            beginSnapshotTransaction();
+            this.autoCommit = false;
+            return;
+        }
+        commit();
     }
 
     @Override
-    public boolean getAutoCommit() {
-        return true;
+    public synchronized boolean getAutoCommit() throws SQLException {
+        ensureOpen();
+        return autoCommit;
     }
 
     @Override
@@ -361,17 +406,18 @@ public class OfgdbConnection implements Connection {
     }
 
     @Override
-    public Savepoint setSavepoint() {
-        return null;
+    public Savepoint setSavepoint() throws SQLException {
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported");
     }
 
     @Override
-    public Savepoint setSavepoint(String name) {
-        return null;
+    public Savepoint setSavepoint(String name) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported");
     }
 
     @Override
-    public void releaseSavepoint(Savepoint savepoint) {
+    public void releaseSavepoint(Savepoint savepoint) throws SQLException {
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported");
     }
 
     @Override
@@ -494,6 +540,76 @@ public class OfgdbConnection implements Connection {
     private void ensureOpen() throws SQLException {
         if (closed) {
             throw new SQLException("connection is closed");
+        }
+    }
+
+    private Path getDbPathAsPath() {
+        return Paths.get(getDbPath()).toAbsolutePath().normalize();
+    }
+
+    private void beginSnapshotTransaction() throws SQLException {
+        Path dbPath = getDbPathAsPath();
+        Path snapshotPath = OfgdbFileSnapshot.buildSnapshotPath(dbPath);
+        try {
+            OfgdbFileSnapshot.createSnapshot(dbPath, snapshotPath);
+            txnSnapshotPath = snapshotPath;
+        } catch (Exception e) {
+            throw new SQLException("failed to create transaction snapshot for " + dbPath, e);
+        }
+    }
+
+    private void rollbackInternal(boolean reopenAfterRestore) throws SQLException {
+        ensureOpen();
+        if (autoCommit) {
+            return;
+        }
+        if (txnSnapshotPath == null) {
+            throw new SQLException("transaction snapshot is missing");
+        }
+        Path dbPath = getDbPathAsPath();
+        try {
+            if (dbHandle != 0L) {
+                api.close(dbHandle);
+                dbHandle = 0L;
+            }
+            OfgdbFileSnapshot.restoreSnapshot(txnSnapshotPath, dbPath);
+            if (reopenAfterRestore) {
+                dbHandle = api.open(dbPath.toString());
+                synchronized (this) {
+                    knownTables.clear();
+                }
+                refreshKnownTableNames();
+            }
+            OfgdbFileSnapshot.deleteRecursively(txnSnapshotPath);
+            txnSnapshotPath = null;
+            autoCommit = true;
+        } catch (Exception e) {
+            throw new SQLException("failed to rollback openfgdb transaction snapshot", e);
+        }
+    }
+
+    private void cleanupSnapshot() throws SQLException {
+        if (txnSnapshotPath == null) {
+            return;
+        }
+        try {
+            OfgdbFileSnapshot.deleteRecursively(txnSnapshotPath);
+            txnSnapshotPath = null;
+        } catch (Exception e) {
+            throw new SQLException("failed to cleanup transaction snapshot", e);
+        }
+    }
+
+    private void cleanupSnapshotQuietly() {
+        if (txnSnapshotPath == null) {
+            return;
+        }
+        try {
+            OfgdbFileSnapshot.deleteRecursively(txnSnapshotPath);
+        } catch (Exception ignore) {
+            // connection is closing; best effort cleanup only
+        } finally {
+            txnSnapshotPath = null;
         }
     }
 }
