@@ -19,11 +19,4 @@ public class SimpleOfgdbTest extends ch.ehi.ili2db.SimpleTest {
     public void createScriptFromIliCoord() throws Exception {
         super.createScriptFromIliCoord();
     }
-
-    @Override
-    @Test
-    @Ignore("requires support of DELETE FROM see #153")
-    public void importXtfStructWithDelete() throws Exception {
-        super.importXtfStructWithDelete();
-    }
 }

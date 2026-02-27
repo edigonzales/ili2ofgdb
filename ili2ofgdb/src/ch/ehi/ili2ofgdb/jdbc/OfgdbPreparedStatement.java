@@ -59,7 +59,8 @@ public class OfgdbPreparedStatement extends OfgdbStatement implements PreparedSt
     }
 
     @Override
-    public void addBatch() {
+    public void addBatch() throws SQLException {
+        queueBatchSql(materializeSql(sqlTemplate, params));
     }
 
     @Override

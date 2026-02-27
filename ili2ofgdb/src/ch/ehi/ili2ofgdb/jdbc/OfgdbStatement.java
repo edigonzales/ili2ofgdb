@@ -1,6 +1,7 @@
 package ch.ehi.ili2ofgdb.jdbc;
 
 import java.sql.Connection;
+import java.sql.BatchUpdateException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
@@ -38,6 +39,8 @@ public class OfgdbStatement implements Statement {
     private static final String BYTE_LITERAL_PREFIX = "__OFGDB_BYTES_B64__:";
     private static final Pattern SELECT_PATTERN = Pattern.compile(
             "(?is)^\\s*SELECT\\s+(.+?)\\s+FROM\\s+((?:\"[^\"]+\"|[A-Za-z0-9_.$]+))(?:\\s+WHERE\\s+(.+?))?(?:\\s+ORDER\\s+BY\\s+(.+?))?\\s*$");
+    private static final Pattern COUNT_ONLY_PATTERN = Pattern.compile(
+            "(?is)^COUNT\\s*\\(\\s*(\\*|1|\"[^\"]+\"|[A-Za-z_][A-Za-z0-9_$]*)\\s*\\)\\s*$");
     private static final Pattern CREATE_TABLE_PATTERN = Pattern.compile("(?is)^\\s*CREATE\\s+TABLE\\s+([A-Za-z0-9_.$\"]+)\\s*\\(.*$");
     private static final Pattern DROP_TABLE_PATTERN = Pattern.compile("(?is)^\\s*DROP\\s+TABLE\\s+([A-Za-z0-9_.$\"]+)\\s*$");
     private static final Pattern SIMPLE_IDENTIFIER_PATTERN = Pattern.compile("(?i)^\"?[A-Za-z_][A-Za-z0-9_$]*\"?(?:\\.\"?[A-Za-z_][A-Za-z0-9_$]*\"?)*$");
@@ -48,6 +51,7 @@ public class OfgdbStatement implements Statement {
     private boolean closed = false;
     private ResultSet currentResultSet = null;
     private int updateCount = -1;
+    private final List<String> batchedSql = new ArrayList<String>();
 
     protected OfgdbStatement(OfgdbConnection conn) {
         this.conn = conn;
@@ -108,6 +112,7 @@ public class OfgdbStatement implements Statement {
             currentResultSet.close();
             currentResultSet = null;
         }
+        batchedSql.clear();
         closed = true;
     }
 
@@ -261,16 +266,44 @@ public class OfgdbStatement implements Statement {
     }
 
     @Override
-    public int[] executeBatch() {
-        return new int[0];
+    public int[] executeBatch() throws SQLException {
+        ensureOpen();
+        if (batchedSql.isEmpty()) {
+            return new int[0];
+        }
+        List<String> pending = new ArrayList<String>(batchedSql);
+        batchedSql.clear();
+        int[] updateCounts = new int[pending.size()];
+        int successful = 0;
+        for (int i = 0; i < pending.size(); i++) {
+            try {
+                executeUpdate(pending.get(i));
+                updateCounts[i] = Statement.SUCCESS_NO_INFO;
+                successful = i + 1;
+            } catch (SQLException e) {
+                int[] partial = new int[successful];
+                System.arraycopy(updateCounts, 0, partial, 0, successful);
+                throw new BatchUpdateException(
+                        "batch execution failed at statement " + (i + 1) + ": " + e.getMessage(),
+                        e.getSQLState(),
+                        e.getErrorCode(),
+                        partial,
+                        e);
+            }
+        }
+        updateCount = -1;
+        return updateCounts;
     }
 
     @Override
-    public void addBatch(String sql) {
+    public void addBatch(String sql) throws SQLException {
+        queueBatchSql(sql);
     }
 
     @Override
-    public void clearBatch() {
+    public void clearBatch() throws SQLException {
+        ensureOpen();
+        batchedSql.clear();
     }
 
     @Override
@@ -301,8 +334,13 @@ public class OfgdbStatement implements Statement {
     }
 
     @Override
-    public long[] executeLargeBatch() {
-        return new long[0];
+    public long[] executeLargeBatch() throws SQLException {
+        int[] updateCounts = executeBatch();
+        long[] out = new long[updateCounts.length];
+        for (int i = 0; i < updateCounts.length; i++) {
+            out[i] = updateCounts[i];
+        }
+        return out;
     }
 
     @Override
@@ -350,6 +388,15 @@ public class OfgdbStatement implements Statement {
             }
         }
         return out.toString();
+    }
+
+    protected void queueBatchSql(String sql) throws SQLException {
+        ensureOpen();
+        String normalizedSql = normalizeSelectSql(sql);
+        if (normalizedSql == null || normalizedSql.isEmpty()) {
+            throw new SQLException("empty SQL statement");
+        }
+        batchedSql.add(normalizedSql);
     }
 
     private ResultSet executeSelectSql(String sql) throws SQLException {
@@ -434,6 +481,9 @@ public class OfgdbStatement implements Statement {
     }
 
     private ResultSet executeSimpleSelect(QueryPlan plan) throws SQLException {
+        if (isCountQuery(plan)) {
+            return executeCountQuery(plan);
+        }
         List<SelectValue> projection = new ArrayList<SelectValue>();
         if (!"*".equals(plan.fieldSpec)) {
             for (String column : plan.columns) {
@@ -552,6 +602,56 @@ public class OfgdbStatement implements Statement {
                 }
             }
         }
+    }
+
+    private ResultSet executeCountQuery(QueryPlan plan) throws SQLException {
+        OpenFgdb api = conn.getApi();
+        long tableHandle = 0L;
+        long cursorHandle = 0L;
+        long count = 0L;
+        try {
+            String resolvedTableName = conn.resolveTableName(plan.tableName);
+            try {
+                tableHandle = api.openTable(conn.getDbHandle(), resolvedTableName);
+            } catch (OpenFgdbException e) {
+                if (!isTableNotFound(e)) {
+                    throw e;
+                }
+                conn.reopenSession();
+                resolvedTableName = conn.resolveTableName(plan.tableName);
+                tableHandle = api.openTable(conn.getDbHandle(), resolvedTableName);
+            }
+            String where = plan.whereClause != null ? plan.whereClause : "";
+            cursorHandle = api.search(tableHandle, "*", where);
+            while (true) {
+                long rowHandle = api.fetchRow(cursorHandle);
+                if (rowHandle == 0L) {
+                    break;
+                }
+                count++;
+                api.closeRow(rowHandle);
+            }
+        } catch (OpenFgdbException e) {
+            throw new SQLException("failed to execute count query", e);
+        } finally {
+            if (cursorHandle != 0L) {
+                try {
+                    api.closeCursor(cursorHandle);
+                } catch (OpenFgdbException ignore) {
+                }
+            }
+            if (tableHandle != 0L) {
+                try {
+                    api.closeTable(conn.getDbHandle(), tableHandle);
+                } catch (OpenFgdbException ignore) {
+                }
+            }
+        }
+        List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>(1);
+        Map<String, Object> row = new HashMap<String, Object>();
+        row.put("count", Long.valueOf(count));
+        rows.add(row);
+        return new OfgdbResultSet(rows, java.util.Arrays.asList("count"));
     }
 
     private ResultSet executeSearch(
@@ -816,6 +916,20 @@ public class OfgdbStatement implements Statement {
             out.append(normalizeQualifiedIdentifiers(outsideLiteral.toString()));
         }
         return out.toString();
+    }
+
+    private static boolean isCountQuery(QueryPlan plan) {
+        if (plan == null || plan.fieldSpec == null) {
+            return false;
+        }
+        String fieldSpec = plan.fieldSpec.trim();
+        if (fieldSpec.isEmpty()) {
+            return false;
+        }
+        if (fieldSpec.indexOf(',') >= 0) {
+            return false;
+        }
+        return COUNT_ONLY_PATTERN.matcher(fieldSpec).matches();
     }
 
     private static String normalizeQualifiedIdentifiers(String input) {
