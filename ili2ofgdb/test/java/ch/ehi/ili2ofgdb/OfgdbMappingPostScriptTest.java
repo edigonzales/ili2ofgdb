@@ -161,6 +161,44 @@ public class OfgdbMappingPostScriptTest {
     }
 
     @Test
+    public void assignsBooleanDomainsToSmallintColumns() throws Exception {
+        OfgdbMapping mapping = new OfgdbMapping();
+        Config config = new Config();
+        config.setFgdbCreateDomains(true);
+        config.setFgdbCreateRelationshipClasses(false);
+        Path workDir = Files.createTempDirectory("ili2ofgdb-bool-domain-");
+        config.setDbfile(workDir.resolve("schema.gdb").toString());
+        ensureTable(config.getDbfile(), "bool_holder", "T_Id INTEGER", "bool_raw SMALLINT", "bool_alias SMALLINT");
+
+        mapping.fromIliInit(config);
+        Map<String, String> booleanValues = new LinkedHashMap<String, String>();
+        booleanValues.put("0", "false");
+        booleanValues.put("1", "true");
+        addDomain(mapping, "INTERLIS_BOOLEAN", "INTEGER", booleanValues);
+        addDomain(mapping, "Enum23_BooleanDomain", "INTEGER", booleanValues);
+        addDomainAssignment(mapping, "bool_holder", "bool_raw", "INTERLIS_BOOLEAN");
+        addDomainAssignment(mapping, "bool_holder", "bool_alias", "Enum23_BooleanDomain");
+
+        mapping.postPostScript(null, config);
+        mapping.postPostScript(null, config);
+
+        OpenFgdb api = new OpenFgdb();
+        long dbHandle = api.open(config.getDbfile());
+        try {
+            List<String> domains = api.listDomains(dbHandle);
+            assertTrue(domains.contains("INTERLIS_BOOLEAN"));
+            assertTrue(domains.contains("Enum23_BooleanDomain"));
+        } finally {
+            api.close(dbHandle);
+        }
+
+        assertTrue(hasDomainAssignment(config.getDbfile(), "INTERLIS_BOOLEAN", "bool_holder", "bool_raw"));
+        assertTrue(hasDomainAssignment(config.getDbfile(), "Enum23_BooleanDomain", "bool_holder", "bool_alias"));
+        assertEquals(1, countDomainAssignments(config.getDbfile(), "INTERLIS_BOOLEAN", "bool_holder", "bool_raw"));
+        assertEquals(1, countDomainAssignments(config.getDbfile(), "Enum23_BooleanDomain", "bool_holder", "bool_alias"));
+    }
+
+    @Test
     public void postPostScriptUsesOpenJdbcHandle() throws Exception {
         OfgdbMapping mapping = new OfgdbMapping();
         Config config = new Config();

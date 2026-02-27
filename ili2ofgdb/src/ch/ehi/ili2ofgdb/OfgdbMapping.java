@@ -25,6 +25,7 @@ import ch.ehi.ili2ofgdb.jdbc.OfgdbConnection;
 import ch.ehi.openfgdb4j.OpenFgdb;
 import ch.ehi.openfgdb4j.OpenFgdbException;
 import ch.ehi.sqlgen.generator_impl.ofgdb.GeneratorOfgdb;
+import ch.ehi.sqlgen.repository.DbColBoolean;
 import ch.ehi.sqlgen.repository.DbColGeometry;
 import ch.ehi.sqlgen.repository.DbColId;
 import ch.ehi.sqlgen.repository.DbColNumber;
@@ -88,38 +89,30 @@ public class OfgdbMapping extends AbstractJdbcMapping {
         if (!createDomains || sqlTableDef == null || sqlColDef == null || iliAttrDef == null) {
             return;
         }
-        Type effectiveType = iliAttrDef.getDomainResolvingAll();
-        if (!(effectiveType instanceof AbstractEnumerationType)) {
-            return;
-        }
+
         Type originalType = iliAttrDef.getDomain();
-        Domain rootAliasDomain = null;
-        if (originalType instanceof TypeAlias) {
-            Domain alias = ((TypeAlias) originalType).getAliasing();
-            rootAliasDomain = Ili2cUtility.getRootBaseDomain(alias);
-            if (isBooleanAlias(originalType, rootAliasDomain)) {
+        Domain rootAliasDomain = resolveRootAliasDomain(originalType);
+        Type effectiveType = iliAttrDef.getDomainResolvingAll();
+        if (isBooleanType(originalType, effectiveType, rootAliasDomain)) {
+            // Scalar-only scope: ARRAY_TRAFO_COALESCE booleans are stored as JSON/VARCHAR.
+            if (!(sqlColDef instanceof DbColBoolean)) {
                 return;
             }
+            String booleanDomainName = resolveBooleanDomainName(rootAliasDomain);
+            registerDomainAssignment(sqlTableDef, sqlColDef, booleanDomainName, resolveFieldType(sqlColDef), buildBooleanValues());
+            return;
         }
-        Element enumOwner = resolveEnumOwner(iliAttrDef, originalType, rootAliasDomain);
-        String domainName = resolveDomainName(iliAttrDef);
-        String sanitizedDomainName = sanitizeName(domainName);
-        String fieldType = resolveFieldType(sqlColDef);
-
-        DomainDefinition domainDefinition = domains.get(sanitizedDomainName);
-        if (domainDefinition == null) {
-            domainDefinition = new DomainDefinition();
-            domainDefinition.domainName = sanitizedDomainName;
-            domainDefinition.fieldType = fieldType;
-            domainDefinition.codedValues.putAll(buildEnumValues(enumOwner, (AbstractEnumerationType) effectiveType));
-            domains.put(sanitizedDomainName, domainDefinition);
+        if (effectiveType instanceof AbstractEnumerationType) {
+            Element enumOwner = resolveEnumOwner(iliAttrDef, originalType, rootAliasDomain);
+            registerDomainAssignment(
+                    sqlTableDef,
+                    sqlColDef,
+                    resolveDomainName(iliAttrDef),
+                    resolveFieldType(sqlColDef),
+                    buildEnumValues(enumOwner, (AbstractEnumerationType) effectiveType));
+            return;
         }
-
-        DomainAssignment assignment = new DomainAssignment();
-        assignment.tableName = sqlTableDef.getName().getName();
-        assignment.columnName = sqlColDef.getName();
-        assignment.domainName = sanitizedDomainName;
-        assignments.put(assignment.tableName + "." + assignment.columnName, assignment);
+        return;
     }
 
     @Override
@@ -470,13 +463,21 @@ public class OfgdbMapping extends AbstractJdbcMapping {
     }
 
     private String resolveFieldType(DbColumn sqlColDef) {
-        if (sqlColDef instanceof DbColId || sqlColDef instanceof DbColNumber) {
+        if (sqlColDef instanceof DbColBoolean || sqlColDef instanceof DbColId || sqlColDef instanceof DbColNumber) {
             return "INTEGER";
         }
         if (sqlColDef instanceof DbColVarchar) {
             return "STRING";
         }
         return "STRING";
+    }
+
+    private Domain resolveRootAliasDomain(Type originalType) {
+        if (!(originalType instanceof TypeAlias)) {
+            return null;
+        }
+        Domain alias = ((TypeAlias) originalType).getAliasing();
+        return Ili2cUtility.getRootBaseDomain(alias);
     }
 
     private String resolveDomainName(AttributeDef iliAttrDef) {
@@ -499,18 +500,57 @@ public class OfgdbMapping extends AbstractJdbcMapping {
         return iliAttrDef;
     }
 
-    private boolean isBooleanAlias(Type originalType, Domain rootAliasDomain) {
-        if (!(originalType instanceof TypeAlias)) {
-            return false;
+    private boolean isBooleanType(Type originalType, Type effectiveType, Domain rootAliasDomain) {
+        if (isBooleanByTypeSignature(effectiveType) || isBooleanByTypeSignature(originalType)) {
+            return true;
         }
-        if (transferDescription != null && Ili2cUtility.isBoolean(transferDescription, originalType)) {
+        if (transferDescription != null && originalType != null && Ili2cUtility.isBoolean(transferDescription, originalType)) {
             return true;
         }
         if (rootAliasDomain != null && transferDescription != null
+                && rootAliasDomain.getType() != null
                 && Ili2cUtility.isBoolean(transferDescription, rootAliasDomain.getType())) {
             return true;
         }
         return rootAliasDomain != null && "INTERLIS.BOOLEAN".equalsIgnoreCase(rootAliasDomain.getScopedName(null));
+    }
+
+    private boolean isBooleanByTypeSignature(Type type) {
+        return type != null && "BooleanType".equals(type.getClass().getSimpleName());
+    }
+
+    private String resolveBooleanDomainName(Domain rootAliasDomain) {
+        if (rootAliasDomain != null && !"INTERLIS.BOOLEAN".equalsIgnoreCase(rootAliasDomain.getScopedName(null))) {
+            return rootAliasDomain.getScopedName(null);
+        }
+        return "INTERLIS_BOOLEAN";
+    }
+
+    private Map<String, String> buildBooleanValues() {
+        Map<String, String> values = new LinkedHashMap<String, String>();
+        values.put("0", "false");
+        values.put("1", "true");
+        return values;
+    }
+
+    private void registerDomainAssignment(DbTable sqlTableDef, DbColumn sqlColDef, String domainName, String fieldType,
+            Map<String, String> codedValues) {
+        String sanitizedDomainName = sanitizeName(domainName);
+
+        DomainDefinition domainDefinition = domains.get(sanitizedDomainName);
+        if (domainDefinition == null) {
+            domainDefinition = new DomainDefinition();
+            domainDefinition.domainName = sanitizedDomainName;
+            domainDefinition.fieldType = fieldType;
+            domainDefinition.codedValues.putAll(codedValues);
+            domains.put(sanitizedDomainName, domainDefinition);
+        }
+
+        DomainAssignment assignment = new DomainAssignment();
+        assignment.tableName = sqlTableDef.getName().getName();
+        assignment.columnName = sqlColDef.getName();
+        assignment.domainName = sanitizedDomainName;
+        assignments.put(assignment.tableName + "." + assignment.columnName, assignment);
     }
 
     private Map<String, String> buildEnumValues(Element enumOwner, AbstractEnumerationType enumType) {
