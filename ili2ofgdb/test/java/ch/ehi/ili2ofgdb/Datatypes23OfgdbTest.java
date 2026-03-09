@@ -101,7 +101,7 @@ public class Datatypes23OfgdbTest extends ch.ehi.ili2db.Datatypes23Test {
                 Assume.assumeTrue(
                         "requires openfgdb4j with persisted VARCHAR(n) widths",
                         Integer.valueOf(30).equals(textLimitedSize) && Integer.valueOf(30).equals(mtextLimitedSize));
-                assertEquals(Integer.valueOf(4000), textUnlimitedSize);
+                assertEquals(Integer.valueOf(4096), textUnlimitedSize);
             }
         } finally {
             if (jdbcConnection != null) {

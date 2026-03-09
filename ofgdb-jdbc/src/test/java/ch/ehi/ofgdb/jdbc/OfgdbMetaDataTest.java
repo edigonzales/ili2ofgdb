@@ -165,7 +165,7 @@ public class OfgdbMetaDataTest {
                 assertTrue(foundShortName);
                 assertTrue(foundNote);
                 Assume.assumeTrue("requires openfgdb4j with persisted VARCHAR(n) widths", Integer.valueOf(20).equals(shortNameSize));
-                assertEquals(Integer.valueOf(4000), noteSize);
+                assertEquals(Integer.valueOf(4096), noteSize);
             }
         } finally {
             if (conn != null) {

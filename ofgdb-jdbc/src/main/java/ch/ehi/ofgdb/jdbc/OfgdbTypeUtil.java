@@ -159,7 +159,7 @@ final class OfgdbTypeUtil {
         case Types.TIMESTAMP:
             return Integer.valueOf(26);
         default:
-            return Integer.valueOf(4000);
+            return Integer.valueOf(4096);
         }
     }
 
@@ -194,7 +194,7 @@ final class OfgdbTypeUtil {
 
     static Integer defaultCharOctetLength(int jdbcType) {
         if (jdbcType == Types.VARCHAR) {
-            return Integer.valueOf(4000);
+            return Integer.valueOf(4096);
         }
         if (jdbcType == Types.BINARY || jdbcType == Types.VARBINARY || jdbcType == Types.LONGVARBINARY) {
             return Integer.valueOf(Integer.MAX_VALUE);

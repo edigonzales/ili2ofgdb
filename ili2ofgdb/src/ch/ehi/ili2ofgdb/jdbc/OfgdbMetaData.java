@@ -161,7 +161,7 @@ public class OfgdbMetaData implements DatabaseMetaData {
 					row.put("DATA_TYPE", java.sql.Types.VARCHAR);
 					row.put("TYPE_NAME", "VARCHAR");
 					Integer columnSize=columnSizes.get(fieldName.toLowerCase());
-					row.put("COLUMN_SIZE", columnSize!=null && columnSize.intValue()>0 ? columnSize : Integer.valueOf(4000));
+					row.put("COLUMN_SIZE", columnSize!=null && columnSize.intValue()>0 ? columnSize : Integer.valueOf(4096));
 					row.put("ORDINAL_POSITION", Integer.valueOf(i+1));
 					row.put("IS_NULLABLE", "YES");
 					rows.add(row);

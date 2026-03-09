@@ -237,12 +237,12 @@ final class OfgdbSchemaCatalog {
         }
         if ("esrifieldtypestring".equals(normalized) || "esrifieldtypeguid".equals(normalized)
                 || "esrifieldtypeglobalid".equals(normalized) || "esrifieldtypexml".equals(normalized)) {
-            int size = (length != null && length.intValue() > 0) ? length.intValue() : 4000;
+            int size = (length != null && length.intValue() > 0) ? length.intValue() : 4096;
             column.applyJdbcType(Types.VARCHAR, "VARCHAR", Integer.valueOf(size), Integer.valueOf(0), null,
                     Integer.valueOf(size));
             return;
         }
-        int fallbackSize = (length != null && length.intValue() > 0) ? length.intValue() : 4000;
+        int fallbackSize = (length != null && length.intValue() > 0) ? length.intValue() : 4096;
         column.applyJdbcType(Types.VARCHAR, "VARCHAR", Integer.valueOf(fallbackSize), Integer.valueOf(0), null,
                 Integer.valueOf(fallbackSize));
     }

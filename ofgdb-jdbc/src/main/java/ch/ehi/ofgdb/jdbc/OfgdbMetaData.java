@@ -846,7 +846,7 @@ public class OfgdbMetaData implements DatabaseMetaData {
 				"CREATE_PARAMS", "NULLABLE", "CASE_SENSITIVE", "SEARCHABLE", "UNSIGNED_ATTRIBUTE", "FIXED_PREC_SCALE",
 				"AUTO_INCREMENT", "LOCAL_TYPE_NAME", "MINIMUM_SCALE", "MAXIMUM_SCALE", "SQL_DATA_TYPE",
 				"SQL_DATETIME_SUB", "NUM_PREC_RADIX");
-		rows.add(typeInfoRow("VARCHAR", Types.VARCHAR, Integer.valueOf(4000), Boolean.TRUE, Boolean.FALSE));
+		rows.add(typeInfoRow("VARCHAR", Types.VARCHAR, Integer.valueOf(4096), Boolean.TRUE, Boolean.FALSE));
 		rows.add(typeInfoRow("INTEGER", Types.INTEGER, Integer.valueOf(10), Boolean.FALSE, Boolean.FALSE));
 		rows.add(typeInfoRow("BIGINT", Types.BIGINT, Integer.valueOf(19), Boolean.FALSE, Boolean.FALSE));
 		rows.add(typeInfoRow("DOUBLE", Types.DOUBLE, Integer.valueOf(15), Boolean.FALSE, Boolean.FALSE));
