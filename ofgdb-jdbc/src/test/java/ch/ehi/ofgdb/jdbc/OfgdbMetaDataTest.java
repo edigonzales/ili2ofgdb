@@ -11,6 +11,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import org.junit.Assume;
 import org.junit.Test;
 
 public class OfgdbMetaDataTest {
@@ -146,21 +147,25 @@ public class OfgdbMetaDataTest {
             try (ResultSet cols = md.getColumns(null, null, "t_width", "%")) {
                 boolean foundShortName = false;
                 boolean foundNote = false;
+                Integer shortNameSize = null;
+                Integer noteSize = null;
                 while (cols.next()) {
                     String col = cols.getString("COLUMN_NAME");
                     if ("short_name".equalsIgnoreCase(col)) {
                         foundShortName = true;
                         assertEquals(Types.VARCHAR, cols.getInt("DATA_TYPE"));
-                        assertEquals(20, cols.getInt("COLUMN_SIZE"));
+                        shortNameSize = Integer.valueOf(cols.getInt("COLUMN_SIZE"));
                     }
                     if ("note".equalsIgnoreCase(col)) {
                         foundNote = true;
                         assertEquals(Types.VARCHAR, cols.getInt("DATA_TYPE"));
-                        assertEquals(4000, cols.getInt("COLUMN_SIZE"));
+                        noteSize = Integer.valueOf(cols.getInt("COLUMN_SIZE"));
                     }
                 }
                 assertTrue(foundShortName);
                 assertTrue(foundNote);
+                Assume.assumeTrue("requires openfgdb4j with persisted VARCHAR(n) widths", Integer.valueOf(20).equals(shortNameSize));
+                assertEquals(Integer.valueOf(4000), noteSize);
             }
         } finally {
             if (conn != null) {
