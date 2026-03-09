@@ -132,6 +132,47 @@ public class OfgdbMetaDataTest {
     }
 
     @Test
+    public void exposesDeclaredVarcharLengthAndDefaultForUnboundedVarchar() throws Exception {
+        Connection conn = null;
+        Path root = null;
+        try {
+            conn = TestDbUtil.openTempConnection("ofgdb-meta-width-");
+            root = TestDbUtil.extractRootFromConnection(conn);
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate("CREATE TABLE t_width(T_Id INTEGER PRIMARY KEY NOT NULL, short_name VARCHAR(20), note VARCHAR)");
+            }
+
+            DatabaseMetaData md = conn.getMetaData();
+            try (ResultSet cols = md.getColumns(null, null, "t_width", "%")) {
+                boolean foundShortName = false;
+                boolean foundNote = false;
+                while (cols.next()) {
+                    String col = cols.getString("COLUMN_NAME");
+                    if ("short_name".equalsIgnoreCase(col)) {
+                        foundShortName = true;
+                        assertEquals(Types.VARCHAR, cols.getInt("DATA_TYPE"));
+                        assertEquals(20, cols.getInt("COLUMN_SIZE"));
+                    }
+                    if ("note".equalsIgnoreCase(col)) {
+                        foundNote = true;
+                        assertEquals(Types.VARCHAR, cols.getInt("DATA_TYPE"));
+                        assertEquals(4000, cols.getInt("COLUMN_SIZE"));
+                    }
+                }
+                assertTrue(foundShortName);
+                assertTrue(foundNote);
+            }
+        } finally {
+            if (conn != null) {
+                conn.close();
+            }
+            if (root != null) {
+                TestDbUtil.deleteRecursively(root);
+            }
+        }
+    }
+
+    @Test
     public void marksIliBlobGeometryColumnsAsGeometry() throws Exception {
         Connection conn = null;
         Path root = null;

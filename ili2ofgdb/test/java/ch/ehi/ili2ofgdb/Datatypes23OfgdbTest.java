@@ -54,6 +54,54 @@ public class Datatypes23OfgdbTest extends ch.ehi.ili2db.Datatypes23Test {
         return new OfgdbTestSetup(FGDBFILENAME);
     }
 
+    @Test
+    public void schemaImportPreservesDeclaredTextLengths() throws Exception {
+        Connection jdbcConnection = null;
+        try {
+            setup.resetDb();
+            jdbcConnection = setup.createConnection();
+            File data = new File(TEST_OUT + "Datatypes23.ili");
+            Config config = setup.initConfig(data.getPath(), data.getPath() + ".log");
+            Ili2db.setNoSmartMapping(config);
+            config.setFunction(Config.FC_SCHEMAIMPORT);
+            config.setCreateFk(Config.CREATE_FK_YES);
+            config.setCreateTextChecks(true);
+            config.setCreateNumChecks(true);
+            config.setCreateDateTimeChecks(true);
+            config.setTidHandling(Config.TID_HANDLING_PROPERTY);
+            config.setBasketHandling(Config.BASKET_HANDLING_READWRITE);
+            Ili2db.run(config, null);
+
+            try (ResultSet cols = jdbcConnection.getMetaData().getColumns(null, null, setup.prefixName("classattr"), "%")) {
+                boolean foundTextLimited = false;
+                boolean foundMtextLimited = false;
+                boolean foundTextUnlimited = false;
+                while (cols.next()) {
+                    String col = cols.getString("COLUMN_NAME");
+                    if ("textlimited".equalsIgnoreCase(col)) {
+                        foundTextLimited = true;
+                        assertEquals(30, cols.getInt("COLUMN_SIZE"));
+                    }
+                    if ("mtextlimited".equalsIgnoreCase(col)) {
+                        foundMtextLimited = true;
+                        assertEquals(30, cols.getInt("COLUMN_SIZE"));
+                    }
+                    if ("textunlimited".equalsIgnoreCase(col)) {
+                        foundTextUnlimited = true;
+                        assertEquals(4000, cols.getInt("COLUMN_SIZE"));
+                    }
+                }
+                assertTrue(foundTextLimited);
+                assertTrue(foundMtextLimited);
+                assertTrue(foundTextUnlimited);
+            }
+        } finally {
+            if (jdbcConnection != null) {
+                jdbcConnection.close();
+            }
+        }
+    }
+
     @Override
     @Test
     public void importXtfAttr() throws Exception {
