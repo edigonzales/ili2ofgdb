@@ -1,5 +1,6 @@
 package ch.ehi.ili2ofgdb.jdbc;
 
+import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -9,6 +10,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 public class OfgdbMetaData implements DatabaseMetaData {
 	private OfgdbConnection conn=null;
@@ -127,12 +136,14 @@ public class OfgdbMetaData implements DatabaseMetaData {
 		columns.add("COLUMN_NAME");
 		columns.add("DATA_TYPE");
 		columns.add("TYPE_NAME");
+		columns.add("COLUMN_SIZE");
 		columns.add("ORDINAL_POSITION");
 		columns.add("IS_NULLABLE");
 		for(String tableName:conn.getKnownTableNames()){
 			if(!matchesPattern(tableName, tableNamePattern)){
 				continue;
 			}
+			Map<String,Integer> columnSizes=readColumnSizes(tableName);
 			long tableHandle=0L;
 			try{
 				tableHandle=conn.getApi().openTable(conn.getDbHandle(), tableName);
@@ -149,6 +160,8 @@ public class OfgdbMetaData implements DatabaseMetaData {
 					row.put("COLUMN_NAME", fieldName);
 					row.put("DATA_TYPE", java.sql.Types.VARCHAR);
 					row.put("TYPE_NAME", "VARCHAR");
+					Integer columnSize=columnSizes.get(fieldName.toLowerCase());
+					row.put("COLUMN_SIZE", columnSize!=null && columnSize.intValue()>0 ? columnSize : Integer.valueOf(4000));
 					row.put("ORDINAL_POSITION", Integer.valueOf(i+1));
 					row.put("IS_NULLABLE", "YES");
 					rows.add(row);
@@ -165,6 +178,118 @@ public class OfgdbMetaData implements DatabaseMetaData {
 			}
 		}
 		return new OfgdbResultSet(rows,columns);
+	}
+
+	private Map<String,Integer> readColumnSizes(String tableName) throws SQLException {
+		Map<String,Integer> ret=new HashMap<String,Integer>();
+		long itemsTable=0L;
+		long cursor=0L;
+		try{
+			itemsTable=conn.getApi().openTable(conn.getDbHandle(), "GDB_Items");
+			List<String> fieldNames=conn.getApi().getFieldNames(itemsTable);
+			String nameColumn=findColumnIgnoreCase(fieldNames, "Name");
+			String definitionColumn=findColumnIgnoreCase(fieldNames, "Definition");
+			if(nameColumn==null || definitionColumn==null){
+				return ret;
+			}
+			cursor=conn.getApi().search(itemsTable, nameColumn+","+definitionColumn, "");
+			while(true){
+				long rowHandle=conn.getApi().fetchRow(cursor);
+				if(rowHandle==0L){
+					return ret;
+				}
+				try{
+					String rowName=conn.getApi().rowGetString(rowHandle, nameColumn);
+					if(rowName==null || !rowName.equalsIgnoreCase(tableName)){
+						continue;
+					}
+					String definitionXml=conn.getApi().rowGetString(rowHandle, definitionColumn);
+					return parseColumnSizes(definitionXml);
+				}finally{
+					conn.getApi().closeRow(rowHandle);
+				}
+			}
+		}catch(ch.ehi.openfgdb4j.OpenFgdbException e){
+			return ret;
+		}finally{
+			if(cursor!=0L){
+				try {
+					conn.getApi().closeCursor(cursor);
+				} catch (ch.ehi.openfgdb4j.OpenFgdbException ignore) {
+				}
+			}
+			if(itemsTable!=0L){
+				try {
+					conn.getApi().closeTable(conn.getDbHandle(), itemsTable);
+				} catch (ch.ehi.openfgdb4j.OpenFgdbException ignore) {
+				}
+			}
+		}
+	}
+
+	private Map<String,Integer> parseColumnSizes(String definitionXml) {
+		Map<String,Integer> ret=new HashMap<String,Integer>();
+		if(definitionXml==null || definitionXml.trim().length()==0){
+			return ret;
+		}
+		try{
+			Document document = DocumentBuilderFactory.newInstance()
+					.newDocumentBuilder()
+					.parse(new InputSource(new StringReader(definitionXml)));
+			NodeList allNodes=document.getElementsByTagName("*");
+			for(int i=0;i<allNodes.getLength();i++){
+				Node node=allNodes.item(i);
+				if(!(node instanceof Element) || !nodeNameMatches(node, "GPFieldInfoEx")){
+					continue;
+				}
+				Element fieldNode=(Element)node;
+				String fieldName=childTagText(fieldNode, "Name");
+				if(fieldName==null || fieldName.trim().length()==0){
+					continue;
+				}
+				String lengthText=childTagText(fieldNode, "Length");
+				if(lengthText==null || lengthText.trim().length()==0){
+					continue;
+				}
+				try{
+					ret.put(fieldName.toLowerCase(), Integer.valueOf(Integer.parseInt(lengthText)));
+				}catch(NumberFormatException ex){
+					// ignore invalid lengths
+				}
+			}
+		}catch(Exception ex){
+			return ret;
+		}
+		return ret;
+	}
+
+	private static String childTagText(Element parent, String tagName) {
+		NodeList children = parent.getChildNodes();
+		for (int i = 0; i < children.getLength(); i++) {
+			Node child = children.item(i);
+			if (child instanceof Element && nodeNameMatches(child, tagName)) {
+				String text = child.getTextContent();
+				return text != null ? text.trim() : null;
+			}
+		}
+		return null;
+	}
+
+	private static boolean nodeNameMatches(Node node, String localTagName) {
+		if (node == null || localTagName == null) {
+			return false;
+		}
+		String name = node.getNodeName();
+		return name != null && name.endsWith(localTagName);
+	}
+
+	private static String findColumnIgnoreCase(List<String> columns, String expected) {
+		for (String candidate : columns) {
+			if (candidate.equalsIgnoreCase(expected)) {
+				return candidate;
+			}
+		}
+		return null;
 	}
 
 	@Override
