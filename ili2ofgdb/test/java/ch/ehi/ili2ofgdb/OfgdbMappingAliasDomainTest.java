@@ -77,11 +77,13 @@ public class OfgdbMappingAliasDomainTest {
         assertTrue(enumValues.containsKey("Test2_ele"));
 
         Object boolAliasDomainDefinition = domains.get(boolAliasDomainName);
+        assertEquals("SMALLINT", readStringField(boolAliasDomainDefinition, "fieldType"));
         Map<String, String> boolAliasValues = readMapField(boolAliasDomainDefinition, "codedValues");
         assertEquals("false", boolAliasValues.get("0"));
         assertEquals("true", boolAliasValues.get("1"));
 
         Object boolRawDomainDefinition = domains.get(boolRawDomainName);
+        assertEquals("SMALLINT", readStringField(boolRawDomainDefinition, "fieldType"));
         Map<String, String> boolRawValues = readMapField(boolRawDomainDefinition, "codedValues");
         assertEquals("false", boolRawValues.get("0"));
         assertEquals("true", boolRawValues.get("1"));
@@ -166,5 +168,11 @@ public class OfgdbMappingAliasDomainTest {
         Field field = instance.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         return (Map<String, T>) field.get(instance);
+    }
+
+    private static String readStringField(Object instance, String fieldName) throws Exception {
+        Field field = instance.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (String) field.get(instance);
     }
 }

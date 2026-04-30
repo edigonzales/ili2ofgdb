@@ -174,8 +174,8 @@ public class OfgdbMappingPostScriptTest {
         Map<String, String> booleanValues = new LinkedHashMap<String, String>();
         booleanValues.put("0", "false");
         booleanValues.put("1", "true");
-        addDomain(mapping, "INTERLIS_BOOLEAN", "INTEGER", booleanValues);
-        addDomain(mapping, "Enum23_BooleanDomain", "INTEGER", booleanValues);
+        addDomain(mapping, "INTERLIS_BOOLEAN", "SMALLINT", booleanValues);
+        addDomain(mapping, "Enum23_BooleanDomain", "SMALLINT", booleanValues);
         addDomainAssignment(mapping, "bool_holder", "bool_raw", "INTERLIS_BOOLEAN");
         addDomainAssignment(mapping, "bool_holder", "bool_alias", "Enum23_BooleanDomain");
 
@@ -196,6 +196,8 @@ public class OfgdbMappingPostScriptTest {
         assertTrue(hasDomainAssignment(config.getDbfile(), "Enum23_BooleanDomain", "bool_holder", "bool_alias"));
         assertEquals(1, countDomainAssignments(config.getDbfile(), "INTERLIS_BOOLEAN", "bool_holder", "bool_raw"));
         assertEquals(1, countDomainAssignments(config.getDbfile(), "Enum23_BooleanDomain", "bool_holder", "bool_alias"));
+        assertEquals("esriFieldTypeSmallInteger", findFirstTagText(readItemDefinition(config.getDbfile(), "INTERLIS_BOOLEAN"), "FieldType"));
+        assertEquals("esriFieldTypeSmallInteger", findFirstTagText(readItemDefinition(config.getDbfile(), "Enum23_BooleanDomain"), "FieldType"));
     }
 
     @Test
@@ -337,6 +339,48 @@ public class OfgdbMappingPostScriptTest {
 
     private static boolean hasDomainAssignment(String dbFile, String domainName, String tableName, String columnName) throws Exception {
         return countDomainAssignments(dbFile, domainName, tableName, columnName) > 0;
+    }
+
+    private static String readItemDefinition(String dbFile, String itemName) throws Exception {
+        OpenFgdb api = new OpenFgdb();
+        long dbHandle = api.open(dbFile);
+        try {
+            long tableHandle = api.openTable(dbHandle, "GDB_Items");
+            try {
+                long cursor = api.search(tableHandle, "Name,Definition", "");
+                try {
+                    while (true) {
+                        long row = api.fetchRow(cursor);
+                        if (row == 0L) {
+                            return null;
+                        }
+                        try {
+                            String rowName = api.rowGetString(row, "Name");
+                            if (rowName != null && rowName.equalsIgnoreCase(itemName)) {
+                                return api.rowGetString(row, "Definition");
+                            }
+                        } finally {
+                            api.closeRow(row);
+                        }
+                    }
+                } finally {
+                    api.closeCursor(cursor);
+                }
+            } finally {
+                api.closeTable(dbHandle, tableHandle);
+            }
+        } finally {
+            api.close(dbHandle);
+        }
+    }
+
+    private static String findFirstTagText(String definitionXml, String tagName) {
+        if (definitionXml == null || tagName == null) {
+            return null;
+        }
+        Pattern pattern = Pattern.compile("(?is)<" + Pattern.quote(tagName) + "\\b[^>]*>\\s*(.*?)\\s*</" + Pattern.quote(tagName) + ">");
+        Matcher matcher = pattern.matcher(definitionXml);
+        return matcher.find() ? matcher.group(1).trim() : null;
     }
 
     private static int countDomainAssignments(String dbFile, String domainName, String tableName, String columnName) throws Exception {

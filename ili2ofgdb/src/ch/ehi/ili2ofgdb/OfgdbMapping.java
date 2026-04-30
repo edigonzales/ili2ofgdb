@@ -463,7 +463,10 @@ public class OfgdbMapping extends AbstractJdbcMapping {
     }
 
     private String resolveFieldType(DbColumn sqlColDef) {
-        if (sqlColDef instanceof DbColBoolean || sqlColDef instanceof DbColId || sqlColDef instanceof DbColNumber) {
+        if (sqlColDef instanceof DbColBoolean) {
+            return "SMALLINT";
+        }
+        if (sqlColDef instanceof DbColId || sqlColDef instanceof DbColNumber) {
             return "INTEGER";
         }
         if (sqlColDef instanceof DbColVarchar) {
