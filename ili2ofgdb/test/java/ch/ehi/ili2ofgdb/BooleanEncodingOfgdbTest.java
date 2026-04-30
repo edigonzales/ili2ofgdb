@@ -10,6 +10,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Types;
 
 import org.junit.Test;
 
@@ -48,6 +49,12 @@ public class BooleanEncodingOfgdbTest {
             assertNotNull(raw);
             assertTrue(raw instanceof Number);
             assertEquals(1, ((Number) raw).intValue());
+        }
+        try (Connection jdbcConnection = setup.createConnection();
+                ResultSet cols = jdbcConnection.getMetaData().getColumns(null, null, setup.prefixName("classattr"), "aBoolean")) {
+            assertTrue(cols.next());
+            assertEquals(Types.SMALLINT, cols.getInt("DATA_TYPE"));
+            assertEquals("SMALLINT", cols.getString("TYPE_NAME"));
         }
     }
 

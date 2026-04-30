@@ -20,7 +20,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
@@ -98,9 +97,8 @@ public class Datatypes23OfgdbTest extends ch.ehi.ili2db.Datatypes23Test {
                 assertTrue(foundTextLimited);
                 assertTrue(foundMtextLimited);
                 assertTrue(foundTextUnlimited);
-                Assume.assumeTrue(
-                        "requires openfgdb4j with persisted VARCHAR(n) widths",
-                        Integer.valueOf(30).equals(textLimitedSize) && Integer.valueOf(30).equals(mtextLimitedSize));
+                assertEquals(Integer.valueOf(30), textLimitedSize);
+                assertEquals(Integer.valueOf(30), mtextLimitedSize);
                 assertEquals(Integer.valueOf(4096), textUnlimitedSize);
             }
         } finally {

@@ -6,9 +6,11 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -138,12 +140,13 @@ public class OfgdbMetaData implements DatabaseMetaData {
 		columns.add("TYPE_NAME");
 		columns.add("COLUMN_SIZE");
 		columns.add("ORDINAL_POSITION");
+		columns.add("NULLABLE");
 		columns.add("IS_NULLABLE");
 		for(String tableName:conn.getKnownTableNames()){
 			if(!matchesPattern(tableName, tableNamePattern)){
 				continue;
 			}
-			Map<String,Integer> columnSizes=readColumnSizes(tableName);
+			Map<String,ColumnDefinition> columnDefinitions=readColumnDefinitions(tableName);
 			long tableHandle=0L;
 			try{
 				tableHandle=conn.getApi().openTable(conn.getDbHandle(), tableName);
@@ -158,12 +161,16 @@ public class OfgdbMetaData implements DatabaseMetaData {
 					row.put("TABLE_SCHEM", schemaPattern);
 					row.put("TABLE_NAME", tableName);
 					row.put("COLUMN_NAME", fieldName);
-					row.put("DATA_TYPE", java.sql.Types.VARCHAR);
-					row.put("TYPE_NAME", "VARCHAR");
-					Integer columnSize=columnSizes.get(fieldName.toLowerCase());
-					row.put("COLUMN_SIZE", columnSize!=null && columnSize.intValue()>0 ? columnSize : Integer.valueOf(4096));
+					ColumnDefinition columnDefinition=columnDefinitions.get(fieldName.toLowerCase(Locale.ROOT));
+					if(columnDefinition==null){
+						columnDefinition=ColumnDefinition.fallback(fieldName);
+					}
+					row.put("DATA_TYPE", Integer.valueOf(columnDefinition.dataType));
+					row.put("TYPE_NAME", columnDefinition.typeName);
+					row.put("COLUMN_SIZE", columnDefinition.columnSize);
 					row.put("ORDINAL_POSITION", Integer.valueOf(i+1));
-					row.put("IS_NULLABLE", "YES");
+					row.put("NULLABLE", Integer.valueOf(columnDefinition.nullable ? columnNullable : columnNoNulls));
+					row.put("IS_NULLABLE", columnDefinition.nullable ? "YES" : "NO");
 					rows.add(row);
 				}
 			}catch(ch.ehi.openfgdb4j.OpenFgdbException e){
@@ -180,8 +187,8 @@ public class OfgdbMetaData implements DatabaseMetaData {
 		return new OfgdbResultSet(rows,columns);
 	}
 
-	private Map<String,Integer> readColumnSizes(String tableName) throws SQLException {
-		Map<String,Integer> ret=new HashMap<String,Integer>();
+	private Map<String,ColumnDefinition> readColumnDefinitions(String tableName) throws SQLException {
+		Map<String,ColumnDefinition> ret=new HashMap<String,ColumnDefinition>();
 		long itemsTable=0L;
 		long cursor=0L;
 		try{
@@ -204,7 +211,7 @@ public class OfgdbMetaData implements DatabaseMetaData {
 						continue;
 					}
 					String definitionXml=conn.getApi().rowGetString(rowHandle, definitionColumn);
-					return parseColumnSizes(definitionXml);
+					return parseColumnDefinitions(definitionXml);
 				}finally{
 					conn.getApi().closeRow(rowHandle);
 				}
@@ -227,8 +234,8 @@ public class OfgdbMetaData implements DatabaseMetaData {
 		}
 	}
 
-	private Map<String,Integer> parseColumnSizes(String definitionXml) {
-		Map<String,Integer> ret=new HashMap<String,Integer>();
+	private Map<String,ColumnDefinition> parseColumnDefinitions(String definitionXml) {
+		Map<String,ColumnDefinition> ret=new HashMap<String,ColumnDefinition>();
 		if(definitionXml==null || definitionXml.trim().length()==0){
 			return ret;
 		}
@@ -247,20 +254,40 @@ public class OfgdbMetaData implements DatabaseMetaData {
 				if(fieldName==null || fieldName.trim().length()==0){
 					continue;
 				}
-				String lengthText=childTagText(fieldNode, "Length");
-				if(lengthText==null || lengthText.trim().length()==0){
-					continue;
-				}
-				try{
-					ret.put(fieldName.toLowerCase(), Integer.valueOf(Integer.parseInt(lengthText)));
-				}catch(NumberFormatException ex){
-					// ignore invalid lengths
-				}
+				ColumnDefinition definition=ColumnDefinition.fromEsriField(
+						childTagText(fieldNode, "FieldType"),
+						parseInteger(childTagText(fieldNode, "Length")),
+						parseBoolean(childTagText(fieldNode, "IsNullable")));
+				ret.put(fieldName.toLowerCase(Locale.ROOT), definition);
 			}
 		}catch(Exception ex){
 			return ret;
 		}
 		return ret;
+	}
+
+	private static Integer parseInteger(String value) {
+		if(value==null || value.trim().length()==0){
+			return null;
+		}
+		try{
+			return Integer.valueOf(Integer.parseInt(value.trim()));
+		}catch(NumberFormatException ex){
+			return null;
+		}
+	}
+
+	private static Boolean parseBoolean(String value) {
+		if(value==null || value.trim().length()==0){
+			return null;
+		}
+		if("true".equalsIgnoreCase(value.trim())){
+			return Boolean.TRUE;
+		}
+		if("false".equalsIgnoreCase(value.trim())){
+			return Boolean.FALSE;
+		}
+		return null;
 	}
 
 	private static String childTagText(Element parent, String tagName) {
@@ -290,6 +317,59 @@ public class OfgdbMetaData implements DatabaseMetaData {
 			}
 		}
 		return null;
+	}
+
+	private static class ColumnDefinition {
+		private final int dataType;
+		private final String typeName;
+		private final Integer columnSize;
+		private final boolean nullable;
+
+		private ColumnDefinition(int dataType, String typeName, Integer columnSize, boolean nullable) {
+			this.dataType=dataType;
+			this.typeName=typeName;
+			this.columnSize=columnSize;
+			this.nullable=nullable;
+		}
+
+		private static ColumnDefinition fallback(String fieldName) {
+			if("OBJECTID".equalsIgnoreCase(fieldName) || "OID".equalsIgnoreCase(fieldName)
+					|| "T_ID".equalsIgnoreCase(fieldName) || "T_Id".equalsIgnoreCase(fieldName)){
+				return new ColumnDefinition(Types.INTEGER, "INTEGER", Integer.valueOf(10), false);
+			}
+			return new ColumnDefinition(Types.VARCHAR, "VARCHAR", Integer.valueOf(4096), true);
+		}
+
+		private static ColumnDefinition fromEsriField(String fieldType, Integer length, Boolean nullable) {
+			boolean isNullable=nullable!=null ? nullable.booleanValue() : false;
+			String normalized=fieldType!=null ? fieldType.trim().toLowerCase(Locale.ROOT) : "";
+			if("esrifieldtypeoid".equals(normalized) || "esrifieldtypeinteger".equals(normalized)){
+				return new ColumnDefinition(Types.INTEGER, "INTEGER", Integer.valueOf(10), isNullable);
+			}
+			if("esrifieldtypesmallinteger".equals(normalized)){
+				return new ColumnDefinition(Types.SMALLINT, "SMALLINT", Integer.valueOf(5), isNullable);
+			}
+			if("esrifieldtypebiginteger".equals(normalized)){
+				return new ColumnDefinition(Types.BIGINT, "BIGINT", Integer.valueOf(19), isNullable);
+			}
+			if("esrifieldtypedouble".equals(normalized)){
+				return new ColumnDefinition(Types.DOUBLE, "DOUBLE", Integer.valueOf(15), isNullable);
+			}
+			if("esrifieldtypesingle".equals(normalized)){
+				return new ColumnDefinition(Types.REAL, "REAL", Integer.valueOf(7), isNullable);
+			}
+			if("esrifieldtypedate".equals(normalized) || "esrifieldtypetimestampoffset".equals(normalized)){
+				return new ColumnDefinition(Types.TIMESTAMP, "TIMESTAMP", Integer.valueOf(26), isNullable);
+			}
+			if("esrifieldtypeblob".equals(normalized)){
+				return new ColumnDefinition(Types.BLOB, "BLOB", Integer.valueOf(Integer.MAX_VALUE), isNullable);
+			}
+			if("esrifieldtypegeometry".equals(normalized)){
+				return new ColumnDefinition(Types.VARBINARY, "GEOMETRY", Integer.valueOf(Integer.MAX_VALUE), isNullable);
+			}
+			Integer stringLength=length!=null && length.intValue()>0 ? length : Integer.valueOf(4096);
+			return new ColumnDefinition(Types.VARCHAR, "VARCHAR", stringLength, isNullable);
+		}
 	}
 
 	@Override
