@@ -169,8 +169,14 @@ public class OfgdbMetaData implements DatabaseMetaData {
 					row.put("TYPE_NAME", columnDefinition.typeName);
 					row.put("COLUMN_SIZE", columnDefinition.columnSize);
 					row.put("ORDINAL_POSITION", Integer.valueOf(i+1));
-					row.put("NULLABLE", Integer.valueOf(columnDefinition.nullable ? columnNullable : columnNoNulls));
-					row.put("IS_NULLABLE", columnDefinition.nullable ? "YES" : "NO");
+					if(columnDefinition.nullable==null){
+						row.put("NULLABLE", Integer.valueOf(columnNullableUnknown));
+						row.put("IS_NULLABLE", "");
+					}else{
+						boolean nullable=columnDefinition.nullable.booleanValue();
+						row.put("NULLABLE", Integer.valueOf(nullable ? columnNullable : columnNoNulls));
+						row.put("IS_NULLABLE", nullable ? "YES" : "NO");
+					}
 					rows.add(row);
 				}
 			}catch(ch.ehi.openfgdb4j.OpenFgdbException e){
@@ -323,9 +329,9 @@ public class OfgdbMetaData implements DatabaseMetaData {
 		private final int dataType;
 		private final String typeName;
 		private final Integer columnSize;
-		private final boolean nullable;
+		private final Boolean nullable;
 
-		private ColumnDefinition(int dataType, String typeName, Integer columnSize, boolean nullable) {
+		private ColumnDefinition(int dataType, String typeName, Integer columnSize, Boolean nullable) {
 			this.dataType=dataType;
 			this.typeName=typeName;
 			this.columnSize=columnSize;
@@ -335,40 +341,39 @@ public class OfgdbMetaData implements DatabaseMetaData {
 		private static ColumnDefinition fallback(String fieldName) {
 			if("OBJECTID".equalsIgnoreCase(fieldName) || "OID".equalsIgnoreCase(fieldName)
 					|| "T_ID".equalsIgnoreCase(fieldName) || "T_Id".equalsIgnoreCase(fieldName)){
-				return new ColumnDefinition(Types.INTEGER, "INTEGER", Integer.valueOf(10), false);
+				return new ColumnDefinition(Types.INTEGER, "INTEGER", Integer.valueOf(10), Boolean.FALSE);
 			}
-			return new ColumnDefinition(Types.VARCHAR, "VARCHAR", Integer.valueOf(4096), true);
+			return new ColumnDefinition(Types.VARCHAR, "VARCHAR", Integer.valueOf(4096), Boolean.TRUE);
 		}
 
 		private static ColumnDefinition fromEsriField(String fieldType, Integer length, Boolean nullable) {
-			boolean isNullable=nullable!=null ? nullable.booleanValue() : false;
 			String normalized=fieldType!=null ? fieldType.trim().toLowerCase(Locale.ROOT) : "";
 			if("esrifieldtypeoid".equals(normalized) || "esrifieldtypeinteger".equals(normalized)){
-				return new ColumnDefinition(Types.INTEGER, "INTEGER", Integer.valueOf(10), isNullable);
+				return new ColumnDefinition(Types.INTEGER, "INTEGER", Integer.valueOf(10), nullable);
 			}
 			if("esrifieldtypesmallinteger".equals(normalized)){
-				return new ColumnDefinition(Types.SMALLINT, "SMALLINT", Integer.valueOf(5), isNullable);
+				return new ColumnDefinition(Types.SMALLINT, "SMALLINT", Integer.valueOf(5), nullable);
 			}
 			if("esrifieldtypebiginteger".equals(normalized)){
-				return new ColumnDefinition(Types.BIGINT, "BIGINT", Integer.valueOf(19), isNullable);
+				return new ColumnDefinition(Types.BIGINT, "BIGINT", Integer.valueOf(19), nullable);
 			}
 			if("esrifieldtypedouble".equals(normalized)){
-				return new ColumnDefinition(Types.DOUBLE, "DOUBLE", Integer.valueOf(15), isNullable);
+				return new ColumnDefinition(Types.DOUBLE, "DOUBLE", Integer.valueOf(15), nullable);
 			}
 			if("esrifieldtypesingle".equals(normalized)){
-				return new ColumnDefinition(Types.REAL, "REAL", Integer.valueOf(7), isNullable);
+				return new ColumnDefinition(Types.REAL, "REAL", Integer.valueOf(7), nullable);
 			}
 			if("esrifieldtypedate".equals(normalized) || "esrifieldtypetimestampoffset".equals(normalized)){
-				return new ColumnDefinition(Types.TIMESTAMP, "TIMESTAMP", Integer.valueOf(26), isNullable);
+				return new ColumnDefinition(Types.TIMESTAMP, "TIMESTAMP", Integer.valueOf(26), nullable);
 			}
 			if("esrifieldtypeblob".equals(normalized)){
-				return new ColumnDefinition(Types.BLOB, "BLOB", Integer.valueOf(Integer.MAX_VALUE), isNullable);
+				return new ColumnDefinition(Types.BLOB, "BLOB", Integer.valueOf(Integer.MAX_VALUE), nullable);
 			}
 			if("esrifieldtypegeometry".equals(normalized)){
-				return new ColumnDefinition(Types.VARBINARY, "GEOMETRY", Integer.valueOf(Integer.MAX_VALUE), isNullable);
+				return new ColumnDefinition(Types.VARBINARY, "GEOMETRY", Integer.valueOf(Integer.MAX_VALUE), nullable);
 			}
 			Integer stringLength=length!=null && length.intValue()>0 ? length : Integer.valueOf(4096);
-			return new ColumnDefinition(Types.VARCHAR, "VARCHAR", stringLength, isNullable);
+			return new ColumnDefinition(Types.VARCHAR, "VARCHAR", stringLength, nullable);
 		}
 	}
 

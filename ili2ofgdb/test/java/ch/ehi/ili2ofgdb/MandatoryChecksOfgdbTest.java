@@ -1,10 +1,12 @@
 package ch.ehi.ili2ofgdb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -12,10 +14,18 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.junit.Test;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import ch.ehi.ili2db.base.Ili2db;
 import ch.ehi.ili2db.gui.Config;
+import ch.ehi.openfgdb4j.OpenFgdb;
 
 public class MandatoryChecksOfgdbTest {
     private static final String TEST_DATA_DIR = "test/data/MandatoryChecks";
@@ -36,9 +46,16 @@ public class MandatoryChecksOfgdbTest {
         config.setBasketHandling(Config.BASKET_HANDLING_READWRITE);
         Ili2db.run(config, null);
 
+        String definitionXml = readItemDefinition(config.getDbfile(), setup.prefixName("classa"));
+        assertNotNull(definitionXml);
+        assertEquals(Boolean.FALSE, findFieldNullable(definitionXml, "aname"));
+        assertEquals(Boolean.FALSE, findFieldNullable(definitionXml, "target"));
+        assertEquals(Boolean.TRUE, findFieldNullable(definitionXml, "note"));
+
         try (Connection jdbcConnection = setup.createConnection()) {
             assertColumn(jdbcConnection, setup.prefixName("classa"), "aname", Types.VARCHAR, "VARCHAR", 20, false);
             assertColumn(jdbcConnection, setup.prefixName("classa"), "target", Types.INTEGER, "INTEGER", 10, false);
+            assertColumn(jdbcConnection, setup.prefixName("classa"), "note", Types.VARCHAR, "VARCHAR", 30, true);
 
             try (Statement stmt = jdbcConnection.createStatement()) {
                 try {
@@ -49,6 +66,83 @@ public class MandatoryChecksOfgdbTest {
                 }
             }
         }
+    }
+
+    private static String readItemDefinition(String dbFile, String itemName) throws Exception {
+        OpenFgdb api = new OpenFgdb();
+        long dbHandle = api.open(dbFile);
+        try {
+            long tableHandle = api.openTable(dbHandle, "GDB_Items");
+            try {
+                long cursor = api.search(tableHandle, "Name,Definition", "");
+                try {
+                    while (true) {
+                        long row = api.fetchRow(cursor);
+                        if (row == 0L) {
+                            return null;
+                        }
+                        try {
+                            String rowName = api.rowGetString(row, "Name");
+                            if (rowName != null && rowName.equalsIgnoreCase(itemName)) {
+                                return api.rowGetString(row, "Definition");
+                            }
+                        } finally {
+                            api.closeRow(row);
+                        }
+                    }
+                } finally {
+                    api.closeCursor(cursor);
+                }
+            } finally {
+                api.closeTable(dbHandle, tableHandle);
+            }
+        } finally {
+            api.close(dbHandle);
+        }
+    }
+
+    private static Boolean findFieldNullable(String definitionXml, String fieldName) throws Exception {
+        Document document = DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(new InputSource(new StringReader(definitionXml)));
+        NodeList allNodes = document.getElementsByTagName("*");
+        for (int i = 0; i < allNodes.getLength(); i++) {
+            Node node = allNodes.item(i);
+            if (!(node instanceof Element) || !nodeNameMatches(node, "GPFieldInfoEx")) {
+                continue;
+            }
+            Element fieldNode = (Element) node;
+            String currentFieldName = childTagText(fieldNode, "Name");
+            if (currentFieldName == null || !currentFieldName.equalsIgnoreCase(fieldName)) {
+                continue;
+            }
+            String nullableText = childTagText(fieldNode, "IsNullable");
+            if (nullableText == null || nullableText.isEmpty()) {
+                return null;
+            }
+            return Boolean.valueOf(Boolean.parseBoolean(nullableText));
+        }
+        return null;
+    }
+
+    private static String childTagText(Element parent, String tagName) {
+        NodeList children = parent.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child instanceof Element && nodeNameMatches(child, tagName)) {
+                String text = child.getTextContent();
+                return text != null ? text.trim() : null;
+            }
+        }
+        return null;
+    }
+
+    private static boolean nodeNameMatches(Node node, String localTagName) {
+        if (node == null || localTagName == null) {
+            return false;
+        }
+        String name = node.getNodeName();
+        return name != null && name.endsWith(localTagName);
     }
 
     private static void assertColumn(Connection jdbcConnection, String tableName, String columnName, int dataType,

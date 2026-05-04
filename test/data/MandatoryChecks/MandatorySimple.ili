@@ -10,6 +10,7 @@ MODEL MandatorySimple
 
     CLASS ClassA =
       name : MANDATORY TEXT*20;
+      note : TEXT*30;
     END ClassA;
 
     ASSOCIATION ClassAToClassB =
