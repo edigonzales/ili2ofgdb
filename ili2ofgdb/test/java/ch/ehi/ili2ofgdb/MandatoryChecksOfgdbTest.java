@@ -13,6 +13,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -48,9 +50,9 @@ public class MandatoryChecksOfgdbTest {
 
         String definitionXml = readItemDefinition(config.getDbfile(), setup.prefixName("classa"));
         assertNotNull(definitionXml);
-        assertEquals(Boolean.FALSE, findFieldNullable(definitionXml, "aname"));
-        assertEquals(Boolean.FALSE, findFieldNullable(definitionXml, "target"));
-        assertEquals(Boolean.TRUE, findFieldNullable(definitionXml, "note"));
+        assertFieldNullable(definitionXml, "aname", Boolean.FALSE);
+        assertFieldNullable(definitionXml, "target", Boolean.FALSE);
+        assertFieldNullable(definitionXml, "note", Boolean.TRUE);
 
         try (Connection jdbcConnection = setup.createConnection()) {
             assertColumn(jdbcConnection, setup.prefixName("classa"), "aname", Types.VARCHAR, "VARCHAR", 20, false);
@@ -101,7 +103,17 @@ public class MandatoryChecksOfgdbTest {
         }
     }
 
-    private static Boolean findFieldNullable(String definitionXml, String fieldName) throws Exception {
+    private static void assertFieldNullable(String definitionXml, String fieldName, Boolean expectedNullable) throws Exception {
+        FieldNullableInspection inspection = inspectFieldNullable(definitionXml, fieldName);
+        if (expectedNullable.equals(inspection.parsedNullable)) {
+            return;
+        }
+        throw new AssertionError("Unexpected IsNullable value for field '" + fieldName + "': expected <"
+                + expectedNullable + "> but was <" + inspection.parsedNullable + ">; "
+                + inspection.diagnosticLine);
+    }
+
+    private static FieldNullableInspection inspectFieldNullable(String definitionXml, String fieldName) throws Exception {
         Document document = DocumentBuilderFactory.newInstance()
                 .newDocumentBuilder()
                 .parse(new InputSource(new StringReader(definitionXml)));
@@ -117,15 +129,65 @@ public class MandatoryChecksOfgdbTest {
                 continue;
             }
             String nullableText = childTagText(fieldNode, "IsNullable");
+            String diagnosticLine = buildFieldDiagnostic(fieldName, nullableText, fieldNode);
             if (nullableText == null || nullableText.isEmpty()) {
-                return null;
+                return new FieldNullableInspection(null, diagnosticLine);
             }
-            return Boolean.valueOf(Boolean.parseBoolean(nullableText));
+            if ("1".equals(nullableText)) {
+                return new FieldNullableInspection(Boolean.TRUE, diagnosticLine);
+            }
+            if ("0".equals(nullableText)) {
+                return new FieldNullableInspection(Boolean.FALSE, diagnosticLine);
+            }
+            return new FieldNullableInspection(Boolean.valueOf(Boolean.parseBoolean(nullableText)), diagnosticLine);
         }
-        return null;
+        return new FieldNullableInspection(null, "field=" + fieldName + "; GPFieldInfoEx node not found in definition");
+    }
+
+    private static String buildFieldDiagnostic(String fieldName, String nullableText, Element fieldNode) {
+        return "field=" + fieldName
+                + "; rawIsNullable=" + String.valueOf(nullableText)
+                + "; childTags=" + listChildTagNames(fieldNode)
+                + "; fieldXmlSnippet=\"" + summarizeXml(fieldNode.getTextContent()) + "\"";
+    }
+
+    private static String listChildTagNames(Element fieldNode) {
+        Set<String> names = new LinkedHashSet<String>();
+        NodeList children = fieldNode.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (!(child instanceof Element)) {
+                continue;
+            }
+            String name = child.getNodeName();
+            if (name != null && name.trim().length() > 0) {
+                names.add(name.trim());
+            }
+        }
+        return names.toString();
+    }
+
+    private static String summarizeXml(String text) {
+        if (text == null) {
+            return "";
+        }
+        String normalized = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ').trim();
+        normalized = normalized.replaceAll("\\s+", " ");
+        if (normalized.length() <= 300) {
+            return normalized;
+        }
+        return normalized.substring(0, 300) + "...";
     }
 
     private static String childTagText(Element parent, String tagName) {
+        NodeList descendants = parent.getElementsByTagName("*");
+        for (int i = 0; i < descendants.getLength(); i++) {
+            Node child = descendants.item(i);
+            if (child instanceof Element && nodeNameMatches(child, tagName)) {
+                String text = child.getTextContent();
+                return text != null ? text.trim() : null;
+            }
+        }
         NodeList children = parent.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             Node child = children.item(i);
@@ -168,5 +230,15 @@ public class MandatoryChecksOfgdbTest {
             current = current.getCause();
         }
         return false;
+    }
+
+    private static final class FieldNullableInspection {
+        private final Boolean parsedNullable;
+        private final String diagnosticLine;
+
+        private FieldNullableInspection(Boolean parsedNullable, String diagnosticLine) {
+            this.parsedNullable = parsedNullable;
+            this.diagnosticLine = diagnosticLine;
+        }
     }
 }

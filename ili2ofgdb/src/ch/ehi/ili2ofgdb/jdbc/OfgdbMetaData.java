@@ -287,16 +287,25 @@ public class OfgdbMetaData implements DatabaseMetaData {
 		if(value==null || value.trim().length()==0){
 			return null;
 		}
-		if("true".equalsIgnoreCase(value.trim())){
+		String normalized=value.trim();
+		if("true".equalsIgnoreCase(normalized) || "1".equals(normalized)){
 			return Boolean.TRUE;
 		}
-		if("false".equalsIgnoreCase(value.trim())){
+		if("false".equalsIgnoreCase(normalized) || "0".equals(normalized)){
 			return Boolean.FALSE;
 		}
 		return null;
 	}
 
 	private static String childTagText(Element parent, String tagName) {
+		NodeList descendants = parent.getElementsByTagName("*");
+		for (int i = 0; i < descendants.getLength(); i++) {
+			Node child = descendants.item(i);
+			if (child instanceof Element && nodeNameMatches(child, tagName)) {
+				String text = child.getTextContent();
+				return text != null ? text.trim() : null;
+			}
+		}
 		NodeList children = parent.getChildNodes();
 		for (int i = 0; i < children.getLength(); i++) {
 			Node child = children.item(i);
