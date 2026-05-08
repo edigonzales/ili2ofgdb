@@ -5,10 +5,12 @@ MODEL OfgdbRangeDomainTest
 
   DOMAIN
     IntDomain = 0 .. 100;
+    BigIntDomain = 0 .. 9223372036854775807;
 
   TOPIC T =
     CLASS C =
       aliasAttr : IntDomain;
+      bigIntAttr : BigIntDomain;
       inlineAttr : 1.00 .. 999.99;
     END C;
   END T;

@@ -208,26 +208,32 @@ public class OfgdbMappingPostScriptTest {
         config.setFgdbCreateRelationshipClasses(false);
         Path workDir = Files.createTempDirectory("ili2ofgdb-range-domain-");
         config.setDbfile(workDir.resolve("schema.gdb").toString());
-        ensureTable(config.getDbfile(), "measurements", "T_Id INTEGER", "height DOUBLE", "level INTEGER");
+        ensureTable(config.getDbfile(), "measurements", "T_Id INTEGER", "height DOUBLE", "level INTEGER", "big_level BIGINT");
 
         mapping.fromIliInit(config);
         addRangeDomain(mapping, "Height_Domain", "DOUBLE", "1.00", true, "999.99", true);
         addDomainAssignment(mapping, "measurements", "height", "Height_Domain");
         addRangeDomain(mapping, "Level_Domain", "INTEGER", "0", true, "100", true);
         addDomainAssignment(mapping, "measurements", "level", "Level_Domain");
+        addRangeDomain(mapping, "BigLevel_Domain", "BIGINT", "0", true, "9223372036854775807", true);
+        addDomainAssignment(mapping, "measurements", "big_level", "BigLevel_Domain");
 
         mapping.postPostScript(null, config);
         mapping.postPostScript(null, config);
 
         assertTrue(hasDomainAssignment(config.getDbfile(), "Height_Domain", "measurements", "height"));
         assertTrue(hasDomainAssignment(config.getDbfile(), "Level_Domain", "measurements", "level"));
+        assertTrue(hasDomainAssignment(config.getDbfile(), "BigLevel_Domain", "measurements", "big_level"));
 
         assertEquals("esriFieldTypeDouble", findFirstTagText(readItemDefinition(config.getDbfile(), "Height_Domain"), "FieldType"));
         assertEquals("esriFieldTypeInteger", findFirstTagText(readItemDefinition(config.getDbfile(), "Level_Domain"), "FieldType"));
+        assertEquals("esriFieldTypeBigInteger", findFirstTagText(readItemDefinition(config.getDbfile(), "BigLevel_Domain"), "FieldType"));
         assertEquals("1", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Height_Domain"), "MinValue")));
         assertEquals("999.99", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Height_Domain"), "MaxValue")));
         assertEquals("0", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Level_Domain"), "MinValue")));
         assertEquals("100", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Level_Domain"), "MaxValue")));
+        assertEquals("0", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "BigLevel_Domain"), "MinValue")));
+        assertEquals("9223372036854775807", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "BigLevel_Domain"), "MaxValue")));
     }
 
     @Test

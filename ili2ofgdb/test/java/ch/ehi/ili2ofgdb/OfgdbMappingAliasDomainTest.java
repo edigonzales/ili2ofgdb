@@ -172,8 +172,10 @@ public class OfgdbMappingAliasDomainTest {
         mapping.fromIliInit(config);
 
         AttributeDef aliasAttr = (AttributeDef) td.getElement("OfgdbRangeDomainTest.T.C.aliasAttr");
+        AttributeDef bigIntAttr = (AttributeDef) td.getElement("OfgdbRangeDomainTest.T.C.bigIntAttr");
         AttributeDef inlineAttr = (AttributeDef) td.getElement("OfgdbRangeDomainTest.T.C.inlineAttr");
         assertNotNull(aliasAttr);
+        assertNotNull(bigIntAttr);
         assertNotNull(inlineAttr);
 
         DbTable table = new DbTable();
@@ -186,8 +188,12 @@ public class OfgdbMappingAliasDomainTest {
         inlineColumn.setName("inlineattr");
         inlineColumn.setSize(5);
         inlineColumn.setPrecision(2);
+        DbColNumber bigIntColumn = new DbColNumber();
+        bigIntColumn.setName("bigintattr");
+        bigIntColumn.setSize(19);
 
         mapping.fixupAttribute(table, aliasColumn, aliasAttr);
+        mapping.fixupAttribute(table, bigIntColumn, bigIntAttr);
         mapping.fixupAttribute(table, inlineColumn, inlineAttr);
 
         Map<String, ?> domains = readMapField(mapping, "domains");
@@ -199,6 +205,12 @@ public class OfgdbMappingAliasDomainTest {
         assertEquals("0", readStringField(aliasDomain, "rangeMinValue"));
         assertEquals("100", readStringField(aliasDomain, "rangeMaxValue"));
 
+        Object bigIntDomain = domains.get("OfgdbRangeDomainTest_BigIntDomain");
+        assertNotNull(bigIntDomain);
+        assertEquals("BIGINT", readStringField(bigIntDomain, "fieldType"));
+        assertEquals("0", readStringField(bigIntDomain, "rangeMinValue"));
+        assertEquals("9223372036854775807", readStringField(bigIntDomain, "rangeMaxValue"));
+
         Object inlineDomain = domains.get("OfgdbRangeDomainTest_T_C_inlineAttr");
         assertNotNull(inlineDomain);
         assertEquals("DOUBLE", readStringField(inlineDomain, "fieldType"));
@@ -206,6 +218,7 @@ public class OfgdbMappingAliasDomainTest {
         assertEquals("999.99", readStringField(inlineDomain, "rangeMaxValue"));
 
         assertTrue(assignments.containsKey("c.aliasattr"));
+        assertTrue(assignments.containsKey("c.bigintattr"));
         assertTrue(assignments.containsKey("c.inlineattr"));
     }
 
