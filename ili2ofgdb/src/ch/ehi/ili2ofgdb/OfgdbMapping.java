@@ -26,6 +26,7 @@ import ch.ehi.openfgdb4j.OpenFgdb;
 import ch.ehi.openfgdb4j.OpenFgdbException;
 import ch.ehi.sqlgen.generator_impl.ofgdb.GeneratorOfgdb;
 import ch.ehi.sqlgen.repository.DbColBoolean;
+import ch.ehi.sqlgen.repository.DbColDecimal;
 import ch.ehi.sqlgen.repository.DbColGeometry;
 import ch.ehi.sqlgen.repository.DbColId;
 import ch.ehi.sqlgen.repository.DbColNumber;
@@ -41,6 +42,8 @@ import ch.interlis.ili2c.metamodel.Domain;
 import ch.interlis.ili2c.metamodel.Element;
 import ch.interlis.ili2c.metamodel.EnumTreeValueType;
 import ch.interlis.ili2c.metamodel.Enumeration;
+import ch.interlis.ili2c.metamodel.NumericType;
+import ch.interlis.ili2c.metamodel.PrecisionDecimal;
 import ch.interlis.ili2c.metamodel.TransferDescription;
 import ch.interlis.ili2c.metamodel.RoleDef;
 import ch.interlis.ili2c.metamodel.Type;
@@ -52,6 +55,7 @@ public class OfgdbMapping extends AbstractJdbcMapping {
     private final Map<String, DomainAssignment> assignments = new LinkedHashMap<String, DomainAssignment>();
     private final Map<String, RoleLinkDefinition> roleLinks = new LinkedHashMap<String, RoleLinkDefinition>();
     private boolean createDomains = true;
+    private boolean createRangeDomains = false;
     private boolean includeInactiveEnumValues = false;
     private boolean createRelationships = true;
     private NameMapping enumNameMapping = null;
@@ -67,6 +71,7 @@ public class OfgdbMapping extends AbstractJdbcMapping {
         defaultXyResolution = config.getValue(GeneratorOfgdb.XY_RESOLUTION);
         defaultXyTolerance = config.getValue(GeneratorOfgdb.XY_TOLERANCE);
         createDomains = config.isFgdbCreateDomains();
+        createRangeDomains = config.isCreateCreateNumChecks();
         includeInactiveEnumValues = config.isFgdbIncludeInactiveEnumValues();
         createRelationships = config.isFgdbCreateRelationshipClasses();
         transferDescription = (TransferDescription) config.getTransientObject(Config.TRANSIENT_MODEL);
@@ -99,18 +104,32 @@ public class OfgdbMapping extends AbstractJdbcMapping {
                 return;
             }
             String booleanDomainName = resolveBooleanDomainName(rootAliasDomain);
-            registerDomainAssignment(sqlTableDef, sqlColDef, booleanDomainName, resolveFieldType(sqlColDef), buildBooleanValues());
+            registerCodedDomainAssignment(sqlTableDef, sqlColDef, booleanDomainName, resolveFieldType(sqlColDef), buildBooleanValues());
             return;
         }
         if (effectiveType instanceof AbstractEnumerationType) {
             Element enumOwner = resolveEnumOwner(iliAttrDef, originalType, rootAliasDomain);
-            registerDomainAssignment(
+            registerCodedDomainAssignment(
                     sqlTableDef,
                     sqlColDef,
                     resolveDomainName(iliAttrDef),
                     resolveFieldType(sqlColDef),
                     buildEnumValues(enumOwner, (AbstractEnumerationType) effectiveType));
             return;
+        }
+        if (createRangeDomains && isNumericRangeColumn(sqlColDef)) {
+            RangeBounds rangeBounds = resolveNumericRange(effectiveType);
+            if (rangeBounds != null) {
+                registerRangeDomainAssignment(
+                        sqlTableDef,
+                        sqlColDef,
+                        resolveDomainName(iliAttrDef),
+                        resolveFieldType(sqlColDef),
+                        rangeBounds.minValue,
+                        rangeBounds.minInclusive,
+                        rangeBounds.maxValue,
+                        rangeBounds.maxInclusive);
+            }
         }
         return;
     }
@@ -234,10 +253,23 @@ public class OfgdbMapping extends AbstractJdbcMapping {
             if (existingDomains.contains(domain.domainName)) {
                 continue;
             }
-            api.createCodedDomain(dbHandle, domain.domainName, domain.fieldType);
+            if (domain.kind == DomainKind.RANGE) {
+                api.createRangeDomain(
+                        dbHandle,
+                        domain.domainName,
+                        domain.fieldType,
+                        domain.rangeMinValue,
+                        domain.rangeMinInclusive,
+                        domain.rangeMaxValue,
+                        domain.rangeMaxInclusive);
+            } else {
+                api.createCodedDomain(dbHandle, domain.domainName, domain.fieldType);
+            }
             existingDomains.add(domain.domainName);
-            for (Map.Entry<String, String> codedValue : domain.codedValues.entrySet()) {
-                api.addCodedValue(dbHandle, domain.domainName, codedValue.getKey(), codedValue.getValue());
+            if (domain.kind == DomainKind.CODED) {
+                for (Map.Entry<String, String> codedValue : domain.codedValues.entrySet()) {
+                    api.addCodedValue(dbHandle, domain.domainName, codedValue.getKey(), codedValue.getValue());
+                }
             }
         }
         for (DomainAssignment assignment : assignments.values()) {
@@ -466,7 +498,13 @@ public class OfgdbMapping extends AbstractJdbcMapping {
         if (sqlColDef instanceof DbColBoolean) {
             return "SMALLINT";
         }
+        if (sqlColDef instanceof DbColDecimal) {
+            return "DOUBLE";
+        }
         if (sqlColDef instanceof DbColId || sqlColDef instanceof DbColNumber) {
+            if (sqlColDef instanceof DbColNumber && ((DbColNumber) sqlColDef).getSize() > 10) {
+                return "BIGINT";
+            }
             return "INTEGER";
         }
         if (sqlColDef instanceof DbColVarchar) {
@@ -536,24 +574,113 @@ public class OfgdbMapping extends AbstractJdbcMapping {
         return values;
     }
 
-    private void registerDomainAssignment(DbTable sqlTableDef, DbColumn sqlColDef, String domainName, String fieldType,
+    private boolean isNumericRangeColumn(DbColumn sqlColDef) {
+        return sqlColDef instanceof DbColDecimal || sqlColDef instanceof DbColNumber;
+    }
+
+    private RangeBounds resolveNumericRange(Type effectiveType) {
+        if (!(effectiveType instanceof NumericType) || effectiveType.isAbstract()) {
+            return null;
+        }
+        PrecisionDecimal min = ((NumericType) effectiveType).getMinimum();
+        PrecisionDecimal max = ((NumericType) effectiveType).getMaximum();
+        if (min == null || max == null) {
+            return null;
+        }
+        RangeBounds rangeBounds = new RangeBounds();
+        rangeBounds.minValue = min.toString();
+        rangeBounds.maxValue = max.toString();
+        return rangeBounds;
+    }
+
+    private void registerCodedDomainAssignment(DbTable sqlTableDef, DbColumn sqlColDef, String domainName, String fieldType,
             Map<String, String> codedValues) {
         String sanitizedDomainName = sanitizeName(domainName);
 
         DomainDefinition domainDefinition = domains.get(sanitizedDomainName);
         if (domainDefinition == null) {
             domainDefinition = new DomainDefinition();
+            domainDefinition.kind = DomainKind.CODED;
             domainDefinition.domainName = sanitizedDomainName;
             domainDefinition.fieldType = fieldType;
             domainDefinition.codedValues.putAll(codedValues);
             domains.put(sanitizedDomainName, domainDefinition);
+        } else {
+            assertCompatibleCodedDomain(domainName, domainDefinition, fieldType, codedValues);
         }
+        registerDomainReference(sqlTableDef, sqlColDef, sanitizedDomainName);
+    }
 
+    private void registerRangeDomainAssignment(
+            DbTable sqlTableDef,
+            DbColumn sqlColDef,
+            String domainName,
+            String fieldType,
+            String minValue,
+            boolean minInclusive,
+            String maxValue,
+            boolean maxInclusive) {
+        String sanitizedDomainName = sanitizeName(domainName);
+
+        DomainDefinition domainDefinition = domains.get(sanitizedDomainName);
+        if (domainDefinition == null) {
+            domainDefinition = new DomainDefinition();
+            domainDefinition.kind = DomainKind.RANGE;
+            domainDefinition.domainName = sanitizedDomainName;
+            domainDefinition.fieldType = fieldType;
+            domainDefinition.rangeMinValue = minValue;
+            domainDefinition.rangeMinInclusive = minInclusive;
+            domainDefinition.rangeMaxValue = maxValue;
+            domainDefinition.rangeMaxInclusive = maxInclusive;
+            domains.put(sanitizedDomainName, domainDefinition);
+        } else {
+            assertCompatibleRangeDomain(domainName, domainDefinition, fieldType, minValue, minInclusive, maxValue, maxInclusive);
+        }
+        registerDomainReference(sqlTableDef, sqlColDef, sanitizedDomainName);
+    }
+
+    private void registerDomainReference(DbTable sqlTableDef, DbColumn sqlColDef, String sanitizedDomainName) {
         DomainAssignment assignment = new DomainAssignment();
         assignment.tableName = sqlTableDef.getName().getName();
         assignment.columnName = sqlColDef.getName();
         assignment.domainName = sanitizedDomainName;
         assignments.put(assignment.tableName + "." + assignment.columnName, assignment);
+    }
+
+    private void assertCompatibleCodedDomain(
+            String rawDomainName,
+            DomainDefinition existing,
+            String fieldType,
+            Map<String, String> codedValues) {
+        if (existing.kind != DomainKind.CODED) {
+            throw new IllegalStateException("ili2ofgdb: domain name collision between range and coded domain: " + rawDomainName);
+        }
+        if (!existing.fieldType.equals(fieldType)) {
+            throw new IllegalStateException("ili2ofgdb: domain field type mismatch for " + rawDomainName);
+        }
+        if (!existing.codedValues.equals(codedValues)) {
+            throw new IllegalStateException("ili2ofgdb: coded domain definition mismatch for " + rawDomainName);
+        }
+    }
+
+    private void assertCompatibleRangeDomain(
+            String rawDomainName,
+            DomainDefinition existing,
+            String fieldType,
+            String minValue,
+            boolean minInclusive,
+            String maxValue,
+            boolean maxInclusive) {
+        if (existing.kind != DomainKind.RANGE) {
+            throw new IllegalStateException("ili2ofgdb: domain name collision between coded and range domain: " + rawDomainName);
+        }
+        if (!existing.fieldType.equals(fieldType)
+                || !existing.rangeMinValue.equals(minValue)
+                || existing.rangeMinInclusive != minInclusive
+                || !existing.rangeMaxValue.equals(maxValue)
+                || existing.rangeMaxInclusive != maxInclusive) {
+            throw new IllegalStateException("ili2ofgdb: range domain definition mismatch for " + rawDomainName);
+        }
     }
 
     private Map<String, String> buildEnumValues(Element enumOwner, AbstractEnumerationType enumType) {
@@ -649,10 +776,27 @@ public class OfgdbMapping extends AbstractJdbcMapping {
         return name;
     }
 
+    private enum DomainKind {
+        CODED,
+        RANGE
+    }
+
     private static class DomainDefinition {
+        private DomainKind kind = DomainKind.CODED;
         private String domainName;
         private String fieldType;
         private final Map<String, String> codedValues = new LinkedHashMap<String, String>();
+        private String rangeMinValue;
+        private boolean rangeMinInclusive = true;
+        private String rangeMaxValue;
+        private boolean rangeMaxInclusive = true;
+    }
+
+    private static class RangeBounds {
+        private String minValue;
+        private boolean minInclusive = true;
+        private String maxValue;
+        private boolean maxInclusive = true;
     }
 
     private static class DomainAssignment {

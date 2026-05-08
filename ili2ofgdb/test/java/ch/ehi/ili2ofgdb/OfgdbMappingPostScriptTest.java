@@ -201,6 +201,36 @@ public class OfgdbMappingPostScriptTest {
     }
 
     @Test
+    public void assignsRangeDomainsToNumericColumns() throws Exception {
+        OfgdbMapping mapping = new OfgdbMapping();
+        Config config = new Config();
+        config.setFgdbCreateDomains(true);
+        config.setFgdbCreateRelationshipClasses(false);
+        Path workDir = Files.createTempDirectory("ili2ofgdb-range-domain-");
+        config.setDbfile(workDir.resolve("schema.gdb").toString());
+        ensureTable(config.getDbfile(), "measurements", "T_Id INTEGER", "height DOUBLE", "level INTEGER");
+
+        mapping.fromIliInit(config);
+        addRangeDomain(mapping, "Height_Domain", "DOUBLE", "1.00", true, "999.99", true);
+        addDomainAssignment(mapping, "measurements", "height", "Height_Domain");
+        addRangeDomain(mapping, "Level_Domain", "INTEGER", "0", true, "100", true);
+        addDomainAssignment(mapping, "measurements", "level", "Level_Domain");
+
+        mapping.postPostScript(null, config);
+        mapping.postPostScript(null, config);
+
+        assertTrue(hasDomainAssignment(config.getDbfile(), "Height_Domain", "measurements", "height"));
+        assertTrue(hasDomainAssignment(config.getDbfile(), "Level_Domain", "measurements", "level"));
+
+        assertEquals("esriFieldTypeDouble", findFirstTagText(readItemDefinition(config.getDbfile(), "Height_Domain"), "FieldType"));
+        assertEquals("esriFieldTypeInteger", findFirstTagText(readItemDefinition(config.getDbfile(), "Level_Domain"), "FieldType"));
+        assertEquals("1", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Height_Domain"), "MinValue")));
+        assertEquals("999.99", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Height_Domain"), "MaxValue")));
+        assertEquals("0", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Level_Domain"), "MinValue")));
+        assertEquals("100", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Level_Domain"), "MaxValue")));
+    }
+
+    @Test
     public void postPostScriptUsesOpenJdbcHandle() throws Exception {
         OfgdbMapping mapping = new OfgdbMapping();
         Config config = new Config();
@@ -272,6 +302,32 @@ public class OfgdbMappingPostScriptTest {
         Field codedValuesField = domainClass.getDeclaredField("codedValues");
         codedValuesField.setAccessible(true);
         ((Map<String, String>) codedValuesField.get(domain)).putAll(codedValues);
+
+        Field domainsField = OfgdbMapping.class.getDeclaredField("domains");
+        domainsField.setAccessible(true);
+        ((Map<String, Object>) domainsField.get(mapping)).put(domainName, domain);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void addRangeDomain(
+            OfgdbMapping mapping,
+            String domainName,
+            String fieldType,
+            String minValue,
+            boolean minInclusive,
+            String maxValue,
+            boolean maxInclusive) throws Exception {
+        Class<?> domainClass = Class.forName("ch.ehi.ili2ofgdb.OfgdbMapping$DomainDefinition");
+        Object domain = newInstance(domainClass);
+        Class<?> kindClass = Class.forName("ch.ehi.ili2ofgdb.OfgdbMapping$DomainKind");
+        Object rangeKind = Enum.valueOf((Class<Enum>) kindClass.asSubclass(Enum.class), "RANGE");
+        setField(domainClass, domain, "kind", rangeKind);
+        setField(domainClass, domain, "domainName", domainName);
+        setField(domainClass, domain, "fieldType", fieldType);
+        setField(domainClass, domain, "rangeMinValue", minValue);
+        setField(domainClass, domain, "rangeMinInclusive", minInclusive);
+        setField(domainClass, domain, "rangeMaxValue", maxValue);
+        setField(domainClass, domain, "rangeMaxInclusive", maxInclusive);
 
         Field domainsField = OfgdbMapping.class.getDeclaredField("domains");
         domainsField.setAccessible(true);
@@ -381,6 +437,17 @@ public class OfgdbMappingPostScriptTest {
         Pattern pattern = Pattern.compile("(?is)<" + Pattern.quote(tagName) + "\\b[^>]*>\\s*(.*?)\\s*</" + Pattern.quote(tagName) + ">");
         Matcher matcher = pattern.matcher(definitionXml);
         return matcher.find() ? matcher.group(1).trim() : null;
+    }
+
+    private static String normalizeNumericText(String value) {
+        if (value == null) {
+            return null;
+        }
+        double numericValue = Double.parseDouble(value.trim());
+        if (Math.rint(numericValue) == numericValue) {
+            return Long.toString(Math.round(numericValue));
+        }
+        return Double.toString(numericValue);
     }
 
     private static int countDomainAssignments(String dbFile, String domainName, String tableName, String columnName) throws Exception {

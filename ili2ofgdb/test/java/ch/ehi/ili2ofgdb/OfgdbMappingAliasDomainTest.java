@@ -2,6 +2,8 @@ package ch.ehi.ili2ofgdb;
 
 import ch.ehi.ili2db.gui.Config;
 import ch.ehi.sqlgen.repository.DbColBoolean;
+import ch.ehi.sqlgen.repository.DbColDecimal;
+import ch.ehi.sqlgen.repository.DbColNumber;
 import ch.ehi.sqlgen.repository.DbColVarchar;
 import ch.ehi.sqlgen.repository.DbTable;
 import ch.ehi.sqlgen.repository.DbTableName;
@@ -153,6 +155,90 @@ public class OfgdbMappingAliasDomainTest {
         Map<String, ?> assignments = readMapField(mapping, "assignments");
         assertTrue(domains.isEmpty());
         assertTrue(assignments.isEmpty());
+    }
+
+    @Test
+    public void fixupAttributeCreatesRangeDomainsForNumericColumns() throws Exception {
+        TransferDescription td = compileModel("ili2ofgdb/test/data/mapping/OfgdbRangeDomainTest.ili");
+
+        Config config = new Config();
+        new OfgdbMain().initConfig(config);
+        config.setMaxSqlNameLength("60");
+        config.setFgdbCreateDomains(true);
+        config.setCreateNumChecks(true);
+        config.setTransientObject(Config.TRANSIENT_MODEL, td);
+
+        OfgdbMapping mapping = new OfgdbMapping();
+        mapping.fromIliInit(config);
+
+        AttributeDef aliasAttr = (AttributeDef) td.getElement("OfgdbRangeDomainTest.T.C.aliasAttr");
+        AttributeDef inlineAttr = (AttributeDef) td.getElement("OfgdbRangeDomainTest.T.C.inlineAttr");
+        assertNotNull(aliasAttr);
+        assertNotNull(inlineAttr);
+
+        DbTable table = new DbTable();
+        table.setName(new DbTableName(null, "c"));
+
+        DbColNumber aliasColumn = new DbColNumber();
+        aliasColumn.setName("aliasattr");
+        aliasColumn.setSize(3);
+        DbColDecimal inlineColumn = new DbColDecimal();
+        inlineColumn.setName("inlineattr");
+        inlineColumn.setSize(5);
+        inlineColumn.setPrecision(2);
+
+        mapping.fixupAttribute(table, aliasColumn, aliasAttr);
+        mapping.fixupAttribute(table, inlineColumn, inlineAttr);
+
+        Map<String, ?> domains = readMapField(mapping, "domains");
+        Map<String, ?> assignments = readMapField(mapping, "assignments");
+
+        Object aliasDomain = domains.get("OfgdbRangeDomainTest_IntDomain");
+        assertNotNull(aliasDomain);
+        assertEquals("INTEGER", readStringField(aliasDomain, "fieldType"));
+        assertEquals("0", readStringField(aliasDomain, "rangeMinValue"));
+        assertEquals("100", readStringField(aliasDomain, "rangeMaxValue"));
+
+        Object inlineDomain = domains.get("OfgdbRangeDomainTest_T_C_inlineAttr");
+        assertNotNull(inlineDomain);
+        assertEquals("DOUBLE", readStringField(inlineDomain, "fieldType"));
+        assertEquals("1.00", readStringField(inlineDomain, "rangeMinValue"));
+        assertEquals("999.99", readStringField(inlineDomain, "rangeMaxValue"));
+
+        assertTrue(assignments.containsKey("c.aliasattr"));
+        assertTrue(assignments.containsKey("c.inlineattr"));
+    }
+
+    @Test
+    public void fixupAttributeSkipsRangeDomainsWhenNumericChecksDisabled() throws Exception {
+        TransferDescription td = compileModel("ili2ofgdb/test/data/mapping/OfgdbRangeDomainTest.ili");
+
+        Config config = new Config();
+        new OfgdbMain().initConfig(config);
+        config.setMaxSqlNameLength("60");
+        config.setFgdbCreateDomains(true);
+        config.setCreateNumChecks(false);
+        config.setTransientObject(Config.TRANSIENT_MODEL, td);
+
+        OfgdbMapping mapping = new OfgdbMapping();
+        mapping.fromIliInit(config);
+
+        AttributeDef aliasAttr = (AttributeDef) td.getElement("OfgdbRangeDomainTest.T.C.aliasAttr");
+        assertNotNull(aliasAttr);
+
+        DbTable table = new DbTable();
+        table.setName(new DbTableName(null, "c"));
+
+        DbColNumber aliasColumn = new DbColNumber();
+        aliasColumn.setName("aliasattr");
+        aliasColumn.setSize(3);
+
+        mapping.fixupAttribute(table, aliasColumn, aliasAttr);
+
+        Map<String, ?> domains = readMapField(mapping, "domains");
+        Map<String, ?> assignments = readMapField(mapping, "assignments");
+        assertFalse(domains.containsKey("OfgdbRangeDomainTest_IntDomain"));
+        assertFalse(assignments.containsKey("c.aliasattr"));
     }
 
     private static TransferDescription compileModel(String modelPath) throws Exception {
