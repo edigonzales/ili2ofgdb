@@ -2,6 +2,7 @@ package ch.ehi.ili2ofgdb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Constructor;
@@ -23,6 +24,7 @@ import org.junit.Test;
 import ch.ehi.ili2db.gui.Config;
 import ch.ehi.ili2ofgdb.jdbc.OfgdbDriver;
 import ch.ehi.openfgdb4j.OpenFgdb;
+import ch.ehi.openfgdb4j.OpenFgdbException;
 
 public class OfgdbMappingPostScriptTest {
 
@@ -223,17 +225,65 @@ public class OfgdbMappingPostScriptTest {
 
         assertTrue(hasDomainAssignment(config.getDbfile(), "Height_Domain", "measurements", "height"));
         assertTrue(hasDomainAssignment(config.getDbfile(), "Level_Domain", "measurements", "level"));
-        assertTrue(hasDomainAssignment(config.getDbfile(), "BigLevel_Domain", "measurements", "big_level"));
 
         assertEquals("esriFieldTypeDouble", findFirstTagText(readItemDefinition(config.getDbfile(), "Height_Domain"), "FieldType"));
         assertEquals("esriFieldTypeInteger", findFirstTagText(readItemDefinition(config.getDbfile(), "Level_Domain"), "FieldType"));
-        assertEquals("esriFieldTypeBigInteger", findFirstTagText(readItemDefinition(config.getDbfile(), "BigLevel_Domain"), "FieldType"));
         assertEquals("1", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Height_Domain"), "MinValue")));
         assertEquals("999.99", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Height_Domain"), "MaxValue")));
         assertEquals("0", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Level_Domain"), "MinValue")));
         assertEquals("100", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "Level_Domain"), "MaxValue")));
-        assertEquals("0", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "BigLevel_Domain"), "MinValue")));
-        assertEquals("9223372036854775807", normalizeNumericText(findFirstTagText(readItemDefinition(config.getDbfile(), "BigLevel_Domain"), "MaxValue")));
+
+        String bigLevelDefinition = readItemDefinition(config.getDbfile(), "BigLevel_Domain");
+        if (bigLevelDefinition == null) {
+            assertFalse(hasDomainAssignment(config.getDbfile(), "BigLevel_Domain", "measurements", "big_level"));
+        } else {
+            assertTrue(hasDomainAssignment(config.getDbfile(), "BigLevel_Domain", "measurements", "big_level"));
+            assertEquals("esriFieldTypeBigInteger", findFirstTagText(bigLevelDefinition, "FieldType"));
+            assertEquals("0", normalizeNumericText(findFirstTagText(bigLevelDefinition, "MinValue")));
+            assertEquals("9223372036854775807", normalizeNumericText(findFirstTagText(bigLevelDefinition, "MaxValue")));
+        }
+    }
+
+    @Test
+    public void knownBigIntRangeDomainLimitationIsDetectedAndCanBeSkipped() {
+        OpenFgdbException ex = new OpenFgdbException(
+                OpenFgdb.OFGDB_ERR_INTERNAL,
+                "ofgdb_create_range_domain failed with OFGDB_ERR_INTERNAL (3): gdal backend failed: "
+                        + "failed to create range domain: Unsupported field type for FileGeoDatabase domain "
+                        + "[requestedType=BIGINT ogrType=Integer64 ogrTypeId=12 ogrSubtypeId=0]");
+
+        assertTrue(OfgdbMapping.isKnownBigIntRangeDomainLimitation("BIGINT", ex));
+        assertFalse(OfgdbMapping.isKnownBigIntRangeDomainLimitation("INTEGER", ex));
+        assertFalse(OfgdbMapping.isKnownBigIntRangeDomainLimitation(
+                "BIGINT",
+                new OpenFgdbException(OpenFgdb.OFGDB_ERR_INTERNAL, "Unsupported field type for FileGeoDatabase domain")));
+        assertFalse(OfgdbMapping.isKnownBigIntRangeDomainLimitation("BIGINT", null));
+    }
+
+    @Test
+    public void knownBigIntRangeDomainLimitationSkipsDomainAndAssignment() throws Exception {
+        OfgdbMapping mapping = new OfgdbMapping();
+        Config config = new Config();
+        config.setFgdbCreateDomains(true);
+        config.setFgdbCreateRelationshipClasses(false);
+        Path workDir = Files.createTempDirectory("ili2ofgdb-range-domain-skip-");
+        config.setDbfile(workDir.resolve("schema.gdb").toString());
+        ensureTable(config.getDbfile(), "measurements", "T_Id INTEGER", "big_level BIGINT");
+
+        mapping.fromIliInit(config);
+        addRangeDomain(mapping, "BigLevel_Domain", "BIGINT", "0", true, "9223372036854775807", true);
+        addDomainAssignment(mapping, "measurements", "big_level", "BigLevel_Domain");
+
+        mapping.postPostScript(null, config);
+
+        String bigLevelDefinition = readItemDefinition(config.getDbfile(), "BigLevel_Domain");
+        if (bigLevelDefinition == null) {
+            assertFalse(hasDomainAssignment(config.getDbfile(), "BigLevel_Domain", "measurements", "big_level"));
+            assertNull(bigLevelDefinition);
+        } else {
+            assertTrue(hasDomainAssignment(config.getDbfile(), "BigLevel_Domain", "measurements", "big_level"));
+            assertEquals("esriFieldTypeBigInteger", findFirstTagText(bigLevelDefinition, "FieldType"));
+        }
     }
 
     @Test

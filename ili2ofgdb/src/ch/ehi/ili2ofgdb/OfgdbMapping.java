@@ -254,14 +254,24 @@ public class OfgdbMapping extends AbstractJdbcMapping {
                 continue;
             }
             if (domain.kind == DomainKind.RANGE) {
-                api.createRangeDomain(
-                        dbHandle,
-                        domain.domainName,
-                        domain.fieldType,
-                        domain.rangeMinValue,
-                        domain.rangeMinInclusive,
-                        domain.rangeMaxValue,
-                        domain.rangeMaxInclusive);
+                try {
+                    api.createRangeDomain(
+                            dbHandle,
+                            domain.domainName,
+                            domain.fieldType,
+                            domain.rangeMinValue,
+                            domain.rangeMinInclusive,
+                            domain.rangeMaxValue,
+                            domain.rangeMaxInclusive);
+                } catch (OpenFgdbException ex) {
+                    if (isKnownBigIntRangeDomainLimitation(domain.fieldType, ex)) {
+                        EhiLogger.logAdaption(
+                                "ili2ofgdb: skip BIGINT range domain " + domain.domainName
+                                        + "; current openfgdb4j/GDAL backend does not support creating this FileGeoDatabase domain on Windows");
+                        continue;
+                    }
+                    throw ex;
+                }
             } else {
                 api.createCodedDomain(dbHandle, domain.domainName, domain.fieldType);
             }
@@ -307,6 +317,15 @@ public class OfgdbMapping extends AbstractJdbcMapping {
                 throw ex;
             }
         }
+    }
+
+    static boolean isKnownBigIntRangeDomainLimitation(String fieldType, OpenFgdbException ex) {
+        if (!"BIGINT".equalsIgnoreCase(fieldType) || ex == null) {
+            return false;
+        }
+        String message = ex.getMessage();
+        return message != null && message.contains("Unsupported field type for FileGeoDatabase domain")
+                && message.contains("requestedType=BIGINT");
     }
 
     private void createRelationships(OpenFgdb api, long dbHandle) throws OpenFgdbException {
